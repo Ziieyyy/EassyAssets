@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAsset, useUpdateAsset, useDeleteAsset } from "@/hooks/useAssets";
 import type { AssetInsert } from "@/types/database";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const categories = ["IT Equipment", "Furniture", "Vehicles", "Office Equipment", "Machinery", "Other"];
 
@@ -63,6 +64,7 @@ export default function EditAsset() {
   const deleteAsset = useDeleteAsset();
   const { data: asset, isLoading } = useAsset(id || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useSettings();
   
   const [formData, setFormData] = useState<Partial<AssetInsert>>({
     id: "",
@@ -257,25 +259,25 @@ export default function EditAsset() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.id?.trim()) {
-      newErrors.id = "Asset ID is required";
+      newErrors.id = t("editAsset.idRequired");
     }
     if (!formData.name?.trim()) {
-      newErrors.name = "Asset name is required";
+      newErrors.name = t("editAsset.nameRequired");
     }
     if (!formData.category) {
-      newErrors.category = "Category is required";
+      newErrors.category = t("editAsset.categoryRequired");
     }
     if (!formData.location?.trim()) {
-      newErrors.location = "Location is required";
+      newErrors.location = t("editAsset.locationRequired");
     }
     if (!formData.purchase_date) {
-      newErrors.purchase_date = "Purchase date is required";
+      newErrors.purchase_date = t("editAsset.purchaseDateRequired");
     }
     if (!formData.purchase_price || formData.purchase_price <= 0) {
-      newErrors.purchase_price = "Purchase price must be greater than 0";
+      newErrors.purchase_price = t("editAsset.purchasePriceRequired");
     }
     if (!formData.assigned_to?.trim()) {
-      newErrors.assigned_to = "Assigned to is required";
+      newErrors.assigned_to = t("editAsset.assignedToRequired");
     }
 
     setErrors(newErrors);
@@ -371,6 +373,28 @@ export default function EditAsset() {
     return `${Math.floor(diffInDays / 30)} months ago`;
   };
 
+  const getCategoryLabel = (category: string) => {
+    const categoryMap: Record<string, string> = {
+      "IT Equipment": t("category.itEquipment"),
+      "Furniture": t("category.furniture"),
+      "Vehicles": t("category.vehicles"),
+      "Office Equipment": t("category.officeEquipment"),
+      "Machinery": t("category.machinery"),
+      "Other": t("category.other"),
+    };
+    return categoryMap[category] || category;
+  };
+
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      "active": t("status.active"),
+      "maintenance": t("status.maintenance"),
+      "inactive": t("status.inactive"),
+      "disposed": t("status.disposed"),
+    };
+    return statusMap[status] || status;
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -386,8 +410,8 @@ export default function EditAsset() {
       <MainLayout>
         <div className="flex flex-col items-center justify-center h-96 gap-4">
           <AlertTriangle className="w-12 h-12 text-destructive" />
-          <h2 className="text-2xl font-bold">Asset Not Found</h2>
-          <Button onClick={() => navigate("/assets")}>Back to Assets</Button>
+          <h2 className="text-2xl font-bold">{t("editAsset.assetNotFound")}</h2>
+          <Button onClick={() => navigate("/assets")}>{t("editAsset.backToAssets")}</Button>
         </div>
       </MainLayout>
     );
@@ -409,10 +433,10 @@ export default function EditAsset() {
             </Button>
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-foreground">
-                Edit Asset: {asset.name}
+                {t("editAsset.title")}: {asset.name}
               </h1>
               <p className="text-muted-foreground mt-1">
-                Last updated {getTimeAgo(asset.created_at)} • ID: {asset.id}
+                {t("editAsset.lastUpdated")} {getTimeAgo(asset.created_at)} • ID: {asset.id}
               </p>
             </div>
           </div>
@@ -424,10 +448,10 @@ export default function EditAsset() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="w-5 h-5 text-primary" />
-                Basic Information
+                {t("editAsset.basicInfo")}
               </CardTitle>
               <CardDescription>
-                Update the essential details about the asset
+                {t("editAsset.basicInfoDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -437,7 +461,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="id" className="flex items-center gap-2">
                     <Hash className="w-4 h-4" />
-                    Asset ID <span className="text-destructive">*</span>
+                    {t("editAsset.assetId")} <span className="text-destructive">{t("editAsset.required")}</span>
                   </Label>
                   <Input
                     id="id"
@@ -455,7 +479,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="name" className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
-                    Asset Name <span className="text-destructive">*</span>
+                    {t("editAsset.assetName")} <span className="text-destructive">{t("editAsset.required")}</span>
                   </Label>
                   <Input
                     id="name"
@@ -474,7 +498,7 @@ export default function EditAsset() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Image Upload */}
                 <div className="space-y-2">
-                  <Label>Asset Image</Label>
+                  <Label>{t("editAsset.assetImage")}</Label>
                   {!imagePreview ? (
                     <div
                       onDrop={handleDrop}
@@ -484,7 +508,7 @@ export default function EditAsset() {
                     >
                       <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                       <p className="text-sm text-muted-foreground text-center">
-                        Drop image or click
+                        {t("editAsset.dropImage")}
                       </p>
                       <input
                         ref={fileInputRef}
@@ -518,7 +542,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="assigned_invoice" className="flex items-center gap-2">
                     <Receipt className="w-4 h-4" />
-                    Assigned Invoice
+                    {t("editAsset.assignedInvoice")}
                   </Label>
                   <Input
                     id="assigned_invoice"
@@ -528,7 +552,7 @@ export default function EditAsset() {
                     className="h-[140px]"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Optional: Reference invoice number for this asset
+                    {t("editAsset.invoiceOptional")}
                   </p>
                 </div>
               </div>
@@ -536,7 +560,7 @@ export default function EditAsset() {
               {/* Category Buttons */}
               <div className="space-y-2">
                 <Label htmlFor="category">
-                  Category <span className="text-destructive">*</span>
+                  {t("editAsset.category")} <span className="text-destructive">{t("editAsset.required")}</span>
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {categories.map((cat) => (
@@ -548,14 +572,14 @@ export default function EditAsset() {
                       onClick={() => handleCategoryChange(cat)}
                       className="rounded-full"
                     >
-                      {cat}
+                      {getCategoryLabel(cat)}
                     </Button>
                   ))}
                 </div>
                 {showOtherCategory && (
                   <Input
                     id="custom_category"
-                    placeholder="Enter custom category..."
+                    placeholder={t("category.customCategory")}
                     value={customCategory}
                     onChange={(e) => handleCustomCategoryChange(e.target.value)}
                     className={cn("mt-2", errors.category ? "border-destructive" : "")}
@@ -570,7 +594,7 @@ export default function EditAsset() {
               {/* Status Buttons - Semantic Colors */}
               <div className="space-y-2">
                 <Label htmlFor="status">
-                  Status <span className="text-destructive">*</span>
+                  {t("editAsset.status")} <span className="text-destructive">{t("editAsset.required")}</span>
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {statuses.map((stat) => (
@@ -585,7 +609,7 @@ export default function EditAsset() {
                         formData.status === stat.value && stat.color
                       )}
                     >
-                      {stat.label}
+                      {getStatusLabel(stat.value)}
                     </Button>
                   ))}
                 </div>
@@ -597,7 +621,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="location" className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
-                    Location <span className="text-destructive">*</span>
+                    {t("editAsset.location")} <span className="text-destructive">{t("editAsset.required")}</span>
                   </Label>
                   <Input
                     id="location"
@@ -615,7 +639,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="assigned_to" className="flex items-center gap-2">
                     <User className="w-4 h-4" />
-                    Assigned To <span className="text-destructive">*</span>
+                    {t("editAsset.assignedTo")} <span className="text-destructive">{t("editAsset.required")}</span>
                   </Label>
                   <Input
                     id="assigned_to"
@@ -637,10 +661,10 @@ export default function EditAsset() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-primary" />
-                Financial Information
+                {t("editAsset.financialInfo")}
               </CardTitle>
               <CardDescription>
-                Update purchase and valuation details
+                {t("editAsset.financialInfoDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -650,7 +674,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="purchase_date" className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    Purchase Date <span className="text-destructive">*</span>
+                    {t("editAsset.purchaseDate")} <span className="text-destructive">{t("editAsset.required")}</span>
                   </Label>
                   <Input
                     id="purchase_date"
@@ -668,7 +692,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="purchase_price" className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4" />
-                    Purchase Price <span className="text-destructive">*</span>
+                    {t("editAsset.purchasePrice")} <span className="text-destructive">{t("editAsset.required")}</span>
                   </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
@@ -698,7 +722,7 @@ export default function EditAsset() {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <TrendingDown className="w-4 h-4" />
-                  Remaining Value (Auto-calculated)
+                  {t("editAsset.remainingValue")}
                 </Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
@@ -712,7 +736,7 @@ export default function EditAsset() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Based on {depreciationMethods.find(m => m.value === depreciationMethod)?.label} depreciation method
+                  {t("editAsset.basedOn")} {depreciationMethods.find(m => m.value === depreciationMethod)?.label} {t("editAsset.depreciationMethod")}
                 </p>
               </div>
             </CardContent>
@@ -723,16 +747,16 @@ export default function EditAsset() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-primary" />
-                Depreciation Calculator
+                {t("editAsset.depreciationCalc")}
               </CardTitle>
               <CardDescription>
-                Automatic depreciation calculation based on purchase details
+                {t("editAsset.depreciationCalcDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Depreciation Method Selection */}
               <div className="space-y-2">
-                <Label>Depreciation Method</Label>
+                <Label>{t("editAsset.depreciationMethodLabel")}</Label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {depreciationMethods.map((method) => (
                     <div
@@ -745,8 +769,16 @@ export default function EditAsset() {
                           : "border-border"
                       )}
                     >
-                      <h4 className="font-semibold text-foreground mb-1">{method.label}</h4>
-                      <p className="text-xs text-muted-foreground">{method.description}</p>
+                      <h4 className="font-semibold text-foreground mb-1">
+                        {method.value === "straight-line" ? t("editAsset.straightLine") :
+                         method.value === "declining-balance" ? t("editAsset.decliningBalance") :
+                         t("editAsset.sumOfYears")}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        {method.value === "straight-line" ? t("editAsset.straightLineDesc") :
+                         method.value === "declining-balance" ? t("editAsset.decliningBalanceDesc") :
+                         t("editAsset.sumOfYearsDesc")}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -756,7 +788,7 @@ export default function EditAsset() {
               <div className="space-y-2">
                 <Label htmlFor="useful_life" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  Useful Life (Years) <span className="text-xs text-muted-foreground ml-2">(Auto-calculated based on category)</span>
+                  {t("editAsset.usefulLife")} <span className="text-xs text-muted-foreground ml-2">{t("editAsset.usefulLifeAuto")}</span>
                 </Label>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <Input
@@ -770,7 +802,7 @@ export default function EditAsset() {
                   />
                   <div className="md:col-span-3 flex items-center">
                     <p className="text-sm text-muted-foreground">
-                      Automatically set based on asset category. You can adjust manually if needed.
+                      {t("editAsset.usefulLifeDesc")}
                     </p>
                   </div>
                 </div>
@@ -782,10 +814,9 @@ export default function EditAsset() {
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-warning mt-0.5" />
                     <div>
-                      <h4 className="font-semibold text-foreground mb-1">Future Purchase Date</h4>
+                      <h4 className="font-semibold text-foreground mb-1">{t("editAsset.futurePurchaseDate")}</h4>
                       <p className="text-sm text-muted-foreground">
-                        The purchase date is set to a future date ({formData.purchase_date ? new Date(formData.purchase_date).toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}).
-                        Depreciation will be calculated once the purchase date has passed.
+                        {t("editAsset.futurePurchaseDateDesc")}
                       </p>
                     </div>
                   </div>
@@ -793,33 +824,33 @@ export default function EditAsset() {
               ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-4 rounded-lg bg-secondary/30 border border-border">
-                  <p className="text-sm text-muted-foreground mb-1">Monthly Depreciation</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("editAsset.monthlyDepreciation")}</p>
                   <p className="text-2xl font-bold text-foreground">
                     RM {depreciationData.monthlyDepreciation.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-secondary/30 border border-border">
-                  <p className="text-sm text-muted-foreground mb-1">Yearly Depreciation</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("editAsset.yearlyDepreciation")}</p>
                   <p className="text-2xl font-bold text-foreground">
                     RM {depreciationData.yearlyDepreciation.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                  <p className="text-sm text-muted-foreground mb-1">Accumulated Depreciation</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("editAsset.accumulatedDepreciation")}</p>
                   <p className="text-2xl font-bold text-destructive">
                     RM {depreciationData.accumulatedDepreciation.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Over {depreciationData.yearsDiff} years ({depreciationData.monthsDiff} months)
+                    {t("editAsset.over")} {depreciationData.yearsDiff} {t("editAsset.years")} ({depreciationData.monthsDiff} {t("editAsset.months")})
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-success/10 border border-success/20">
-                  <p className="text-sm text-muted-foreground mb-1">Remaining Value</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("assets.remainingValue")}</p>
                   <p className="text-2xl font-bold text-success">
                     RM {depreciationData.remainingValue.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {depreciationData.depreciationRate.toFixed(1)}% annual rate
+                    {depreciationData.depreciationRate.toFixed(1)}% {t("editAsset.annualRate")}
                   </p>
                 </div>
               </div>
@@ -850,10 +881,10 @@ export default function EditAsset() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
-                Additional Details
+                {t("editAsset.additionalDetails")}
               </CardTitle>
               <CardDescription>
-                Optional information about the asset
+                {t("editAsset.additionalDetailsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -862,7 +893,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="serial_number" className="flex items-center gap-2">
                     <Hash className="w-4 h-4" />
-                    Serial Number
+                    {t("editAsset.serialNumber")}
                   </Label>
                   <Input
                     id="serial_number"
@@ -876,11 +907,11 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="description" className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
-                    Description
+                    {t("editAsset.description")}
                   </Label>
                   <Textarea
                     id="description"
-                    placeholder="Enter additional details..."
+                    placeholder={t("editAsset.enterAdditionalDetails")}
                     rows={3}
                     value={formData.description || ""}
                     onChange={(e) => handleChange("description", e.target.value)}
@@ -896,43 +927,43 @@ export default function EditAsset() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="w-5 h-5" />
-                Danger Zone
+                {t("editAsset.dangerZone")}
               </CardTitle>
               <CardDescription>
-                Irreversible actions. Please proceed with caution.
+                {t("editAsset.dangerZoneDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg bg-destructive/5">
                 <div>
-                  <h3 className="font-semibold text-foreground">Delete this asset</h3>
+                  <h3 className="font-semibold text-foreground">{t("editAsset.deleteAsset")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Once deleted, this asset cannot be recovered.
+                    {t("editAsset.deleteAssetDesc")}
                   </p>
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="gap-2">
                       <Trash2 className="w-4 h-4" />
-                      Delete Asset
+                      {t("editAsset.deleteAssetBtn")}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogTitle>{t("editAsset.confirmDelete")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the asset
+                        {t("editAsset.confirmDeleteDesc")}
                         <span className="font-semibold"> "{asset.name}" </span>
-                        and remove all associated data from the database.
+                        {t("editAsset.confirmDeleteDesc2")}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{t("editAsset.cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleDelete}
                         className="bg-destructive hover:bg-destructive/90"
                       >
-                        Delete Permanently
+                        {t("editAsset.deletePermanently")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -945,7 +976,7 @@ export default function EditAsset() {
           {Object.keys(errors).length > 0 && (
             <Alert variant="destructive">
               <AlertDescription>
-                Please fix the errors above before saving.
+                {t("editAsset.fixErrors")}
               </AlertDescription>
             </Alert>
           )}
@@ -953,7 +984,7 @@ export default function EditAsset() {
           {/* Action Buttons */}
           <div className="flex items-center justify-between gap-4 pt-4">
             <div className="text-sm text-muted-foreground">
-              <span className="font-medium">Required fields</span> are marked with <span className="text-destructive">*</span>
+              <span className="font-medium">{t("editAsset.requiredFields")}</span> {t("editAsset.markedWith")} <span className="text-destructive">{t("editAsset.required")}</span>
             </div>
             <div className="flex items-center gap-3">
               <Button
@@ -963,7 +994,7 @@ export default function EditAsset() {
                 disabled={updateAsset.isPending}
                 className="rounded-full px-6"
               >
-                Cancel
+                {t("editAsset.cancel")}
               </Button>
               <Button
                 type="submit"
@@ -973,12 +1004,12 @@ export default function EditAsset() {
                 {updateAsset.isPending ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Saving...
+                    {t("editAsset.saving")}
                   </>
                 ) : (
                   <>
                     <Package className="w-4 h-4" />
-                    Save Changes
+                    {t("editAsset.saveChanges")}
                   </>
                 )}
               </Button>

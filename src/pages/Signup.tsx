@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Package, Building2, User, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { PasswordStrengthIndicator, validatePassword } from "@/components/PasswordStrengthIndicator";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -17,35 +18,34 @@ export default function Signup() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+
+  const isPasswordValid = validatePassword(password);
+  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     // Validation
+    if (!isPasswordValid) {
+      setError("Password does not meet all requirements");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return;
-    }
-
-    if (!companyName.trim()) {
-      setError("Company name is required");
       return;
     }
 
     setLoading(true);
 
     try {
-      await signUp(email, password, companyName.trim(), fullName.trim() || undefined);
-      toast.success("Account created successfully!");
-      navigate("/");
+      await signUp(email, password, companyName.trim() || undefined, fullName.trim() || undefined);
+      toast.success("Account created successfully! Please sign in.");
+      navigate("/login");
     } catch (err: any) {
       setError(err.message || "Failed to create account");
       toast.error(err.message || "Failed to create account");
@@ -79,11 +79,11 @@ export default function Signup() {
                 </Alert>
               )}
 
-              {/* Company Name - Required */}
+              {/* Company Name - Optional */}
               <div className="space-y-2">
                 <Label htmlFor="companyName" className="flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
-                  Company Name <span className="text-destructive">*</span>
+                  Company Name (Optional)
                 </Label>
                 <Input
                   id="companyName"
@@ -91,7 +91,6 @@ export default function Signup() {
                   placeholder="Acme Corporation"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  required
                   disabled={loading}
                   className="bg-secondary/50"
                 />
@@ -147,14 +146,16 @@ export default function Signup() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
                   required
-                  minLength={6}
                   disabled={loading}
                   className="bg-secondary/50"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Minimum 6 characters
-                </p>
+                <PasswordStrengthIndicator 
+                  password={password} 
+                  show={passwordFocused || (password.length > 0 && !isPasswordValid)} 
+                />
               </div>
 
               {/* Confirm Password */}
@@ -173,12 +174,17 @@ export default function Signup() {
                   disabled={loading}
                   className="bg-secondary/50"
                 />
+                {confirmPassword.length > 0 && !passwordsMatch && (
+                  <p className="text-xs text-destructive animate-in fade-in duration-150">
+                    Passwords do not match
+                  </p>
+                )}
               </div>
 
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading}
+                disabled={loading || !isPasswordValid || !passwordsMatch}
               >
                 {loading ? (
                   <>

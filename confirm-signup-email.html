@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Email - myEasyAssets</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0F1219 0%, #1A1F2C 100%);
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #1A1F2C;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+        }
+        .header {
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .logo-icon {
+            font-size: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 10px;
+        }
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #FFFFFF;
+        }
+        .welcome-badge {
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: white;
+        }
+        h1 {
+            color: #FFFFFF;
+            font-size: 28px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        p {
+            color: #94a3b8;
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 32px 0;
+        }
+        .confirm-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+            color: white;
+            padding: 16px 40px;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+            transition: all 0.3s ease;
+        }
+        .confirm-button:hover {
+            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+            transform: translateY(-2px);
+        }
+        .features {
+            background: #0F1219;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 32px 0;
+            border: 1px solid rgba(147, 51, 234, 0.2);
+        }
+        .features h2 {
+            color: #e9d5ff;
+            font-size: 18px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(147, 51, 234, 0.1);
+        }
+        .feature-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .feature-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .feature-text {
+            flex: 1;
+        }
+        .feature-text strong {
+            color: #c4b5fd;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+        .feature-text span {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .info-box {
+            background: rgba(124, 58, 237, 0.1);
+            border-left: 4px solid #7c3aed;
+            padding: 16px 20px;
+            margin: 24px 0;
+            border-radius: 8px;
+        }
+        .info-box p {
+            margin: 0;
+            color: #c4b5fd;
+            font-size: 14px;
+        }
+        .info-box strong {
+            color: #e9d5ff;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .link-text {
+            background: #0F1219;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #a78bfa;
+            word-break: break-all;
+            margin: 16px 0;
+        }
+        .footer {
+            background: #0F1219;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid rgba(147, 51, 234, 0.2);
+        }
+        .footer p {
+            color: #64748b;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+        .footer a {
+            color: #a855f7;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(147, 51, 234, 0.3), transparent);
+            margin: 24px 0;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 20px 10px;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            .confirm-button {
+                padding: 14px 32px;
+                font-size: 15px;
+            }
+            .features {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">📦</div>
+                <span>myEasyAssets</span>
+            </div>
+            <div class="subtitle">Asset Management System</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="welcome-badge">🎉 Welcome Aboard!</div>
+            <h1>Confirm Your Email Address</h1>
+            <p>Hi there,</p>
+            <p>Thanks for signing up with myEasyAssets! We're excited to have you on board. To get started, please confirm your email address by clicking the button below.</p>
+
+            <!-- Confirm Button -->
+            <div class="button-container">
+                <a href="{{ .ConfirmationURL }}" class="confirm-button">Confirm Email Address</a>
+            </div>
+
+            <p style="text-align: center; font-size: 14px; color: #64748b;">
+                Or copy and paste this link into your browser:
+            </p>
+            <div class="link-text">{{ .ConfirmationURL }}</div>
+
+            <div class="divider"></div>
+
+            <!-- Features Section -->
+            <div class="features">
+                <h2>What you can do with myEasyAssets:</h2>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-text">
+                        <strong>Track Assets</strong>
+                        <span>Manage all your company assets in one place with detailed tracking and categorization</span>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-icon">🔧</div>
+                    <div class="feature-text">
+                        <strong>Maintenance Scheduling</strong>
+                        <span>Never miss maintenance deadlines with automated reminders and scheduling</span>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-text">
+                        <strong>Depreciation Tracking</strong>
+                        <span>Automatic calculation of asset depreciation with customizable methods</span>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-icon">📸</div>
+                    <div class="feature-text">
+                        <strong>Document Management</strong>
+                        <span>Upload and organize photos, receipts, and important documents</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Important Information -->
+            <div class="info-box">
+                <strong>⏱️ Link Expires in 24 Hours</strong>
+                <p>For security purposes, this confirmation link will expire in 24 hours. Please confirm your email soon!</p>
+            </div>
+
+            <p style="font-size: 14px;">
+                Need help getting started? Check out our <a href="{{ .SiteURL }}/help" style="color: #a855f7; text-decoration: none;">Getting Started Guide</a> or contact us at <a href="mailto:support@myeasyassets.com" style="color: #a855f7; text-decoration: none;">support@myeasyassets.com</a>
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p style="font-weight: 600; color: #94a3b8;">© 2024 myEasyAssets. All rights reserved.</p>
+            <p style="font-size: 12px; margin-top: 16px;">
+                This is an automated message. Please do not reply directly to this email.
+            </p>
+            <p style="font-size: 12px; margin-top: 8px;">
+                If you didn't create an account, you can safely ignore this email.
+            </p>
+            <p style="font-size: 12px; margin-top: 12px;">
+                <a href="{{ .SiteURL }}">Visit myEasyAssets</a> • 
+                <a href="{{ .SiteURL }}/privacy">Privacy Policy</a> • 
+                <a href="{{ .SiteURL }}/terms">Terms of Service</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

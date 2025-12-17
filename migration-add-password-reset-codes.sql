@@ -6,12 +6,14 @@ CREATE TABLE IF NOT EXISTS public.password_reset_codes (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     used BOOLEAN DEFAULT FALSE,
+    verified BOOLEAN DEFAULT FALSE,
     used_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS password_reset_codes_email_idx ON public.password_reset_codes(email);
 CREATE INDEX IF NOT EXISTS password_reset_codes_code_idx ON public.password_reset_codes(code);
+CREATE INDEX IF NOT EXISTS password_reset_codes_expires_idx ON public.password_reset_codes(expires_at);
 
 -- Enable Row Level Security
 ALTER TABLE public.password_reset_codes ENABLE ROW LEVEL SECURITY;

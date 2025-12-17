@@ -1,0 +1,87 @@
+/* ========================================
+ * HOVER ANIMATION EXAMPLES
+ * ========================================
+ * 
+ * Usage Guide for the new hover utilities:
+ * 
+ * 1. LIFT EFFECT (Cards, Panels):
+ *    className="hover-lift"
+ *    Example: <div className="card hover-lift">Content</div>
+ * 
+ * 2. GLOW EFFECT (Important elements):
+ *    className="hover-glow"
+ *    Example: <button className="btn hover-glow">Click me</button>
+ * 
+ * 3. SCALE EFFECT (Icons, Images):
+ *    className="hover-scale"
+ *    Example: <img className="hover-scale" src="..." />
+ * 
+ * 4. BORDER HIGHLIGHT:
+ *    className="hover-border"
+ *    Example: <div className="input-wrapper hover-border">...</div>
+ * 
+ * 5. BACKGROUND COLOR CHANGES:
+ *    className="hover-bg-primary"  - rgb(78, 86, 192)
+ *    className="hover-bg-secondary" - rgb(155, 93, 224)
+ *    className="hover-bg-accent"   - rgb(215, 143, 238)
+ * 
+ * 6. GRADIENT OVERLAY:
+ *    className="hover-gradient"
+ *    Example: <div className="card hover-gradient">Content</div>
+ * 
+ * 7. SHINE EFFECT (Premium feel):
+ *    className="hover-shine"
+ *    Example: <button className="btn hover-shine">Premium</button>
+ * 
+ * COMBINE EFFECTS:
+ * className="hover-lift hover-glow hover-border"
+ * 
+ * Color Hierarchy:
+ * - Primary: rgb(78, 86, 192)   - Main actions
+ * - Secondary: rgb(155, 93, 224) - Secondary actions
+ * - Accent: rgb(215, 143, 238)   - Hover states
+ * - Surface: rgb(253, 207, 250)  - Backgrounds
+ * ======================================== */
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}

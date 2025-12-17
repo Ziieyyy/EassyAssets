@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, DollarSign, Calendar, MapPin, User, FileText, Hash, Upload, X } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, Calendar, MapPin, User, FileText, Hash, Upload, X, Receipt } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ export default function AddAsset() {
     purchase_date: new Date().toISOString().split('T')[0],
     purchase_price: 0,
     assigned_to: "",
+    assigned_invoice: "",
     description: "",
     serial_number: "",
   });
@@ -196,9 +197,9 @@ export default function AddAsset() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Grid Layout - Asset ID + Asset Name + Image Upload */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Asset ID - Takes 1 column */}
+              {/* Row 1: Asset ID and Asset Name - 2 Columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Asset ID */}
                 <div className="space-y-2">
                   <Label htmlFor="id" className="flex items-center gap-2">
                     <Hash className="w-4 h-4" />
@@ -216,7 +217,7 @@ export default function AddAsset() {
                   )}
                 </div>
 
-                {/* Asset Name - Takes 1 column */}
+                {/* Asset Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name" className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
@@ -233,8 +234,11 @@ export default function AddAsset() {
                     <p className="text-sm text-destructive">{errors.name}</p>
                   )}
                 </div>
+              </div>
 
-                {/* Image Upload - Takes 1 column */}
+              {/* Row 2: Image Upload and Assigned Invoice - Side by Side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Image Upload */}
                 <div className="space-y-2">
                   <Label>Asset Image</Label>
                   {!imagePreview ? (
@@ -242,7 +246,7 @@ export default function AddAsset() {
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors h-[120px]"
+                      className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors h-[140px]"
                     >
                       <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                       <p className="text-sm text-muted-foreground text-center">
@@ -257,7 +261,7 @@ export default function AddAsset() {
                       />
                     </div>
                   ) : (
-                    <div className="relative h-[120px] rounded-lg overflow-hidden">
+                    <div className="relative h-[140px] rounded-lg overflow-hidden">
                       <img
                         src={imagePreview}
                         alt="Asset preview"
@@ -274,6 +278,24 @@ export default function AddAsset() {
                       </Button>
                     </div>
                   )}
+                </div>
+
+                {/* Assigned Invoice */}
+                <div className="space-y-2">
+                  <Label htmlFor="assigned_invoice" className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4" />
+                    Assigned Invoice
+                  </Label>
+                  <Input
+                    id="assigned_invoice"
+                    placeholder="e.g., INV-2024-001"
+                    value={formData.assigned_invoice || ""}
+                    onChange={(e) => handleChange("assigned_invoice", e.target.value)}
+                    className="h-[140px]"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Optional: Reference invoice number for this asset
+                  </p>
                 </div>
               </div>
 
@@ -335,7 +357,7 @@ export default function AddAsset() {
                 </div>
               </div>
 
-              {/* Location and Assigned To - 2 Column Grid with Text Inputs */}
+              {/* Location and Assigned To - 2 Column Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Location */}
                 <div className="space-y-2">

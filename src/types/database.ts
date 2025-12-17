@@ -68,6 +68,7 @@ export interface Database {
           purchase_price: number
           current_value: number
           assigned_to: string
+          assigned_invoice: string | null
           description: string | null
           serial_number: string | null
           image_url: string | null
@@ -85,6 +86,7 @@ export interface Database {
           purchase_price: number
           current_value: number
           assigned_to: string
+          assigned_invoice?: string | null
           description?: string | null
           serial_number?: string | null
           image_url?: string | null
@@ -102,6 +104,7 @@ export interface Database {
           purchase_price?: number
           current_value?: number
           assigned_to?: string
+          assigned_invoice?: string | null
           description?: string | null
           serial_number?: string | null
           image_url?: string | null

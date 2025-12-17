@@ -1,73 +1,84 @@
-# Welcome to your Lovable project
+# myEasyAssets - Asset Management System
 
-## Project info
+A modern, professional asset management and tracking system built with React and Supabase.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Project Info
 
-## How can I edit this code?
+**Repository**: https://github.com/Ziieyyy/EassyAssets.git
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- 📊 Real-time asset tracking and monitoring
+- 💰 Automated depreciation calculations
+- 🔔 Maintenance scheduling and reminders
+- 📈 Interactive dashboards and analytics
+- 🌓 Dark mode support
+- 🔐 Secure authentication with Supabase
+- 🏢 Multi-company support
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- A Supabase account and project
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Step 1: Clone the repository
+git clone https://github.com/Ziieyyy/EassyAssets.git
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Navigate to the project directory
+cd EassyAssets
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Step 3: Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Set up environment variables
+# Create a .env file in the root directory with:
+# VITE_SUPABASE_URL=your_supabase_url
+# VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Step 5: Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
+## Tech Stack
 
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **Vite** - Fast build tool and dev server
+- **TypeScript** - Type-safe JavaScript
+- **React** - UI framework
+- **Supabase** - Backend as a Service (Authentication & Database)
+- **shadcn-ui** - Beautiful UI components
+- **Tailwind CSS** - Utility-first CSS framework
+- **Recharts** - Charting library
+- **React Query** - Data fetching and caching
+- **AOS** - Animate on scroll library
 
-## How can I deploy this project?
+## Database Setup
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Refer to `DATABASE_SETUP.md` for detailed instructions on setting up your Supabase database schema.
 
-## Can I connect a custom domain to my Lovable project?
+## Project Structure
 
-Yes, you can!
+```
+src/
+├── components/       # Reusable UI components
+├── contexts/         # React context providers
+├── hooks/           # Custom React hooks
+├── lib/             # Utility functions and configs
+├── pages/           # Application pages
+├── services/        # API service functions
+└── types/           # TypeScript type definitions
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Contributing
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Feel free to submit issues and pull requests!
+
+## License
+
+MIT License - feel free to use this project for your own purposes.

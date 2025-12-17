@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Package, DollarSign, Calendar, MapPin, User, FileText, Hash, Upload, X, Trash2, AlertTriangle, TrendingDown } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, Calendar, MapPin, User, FileText, Hash, Upload, X, Trash2, AlertTriangle, TrendingDown, Receipt } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,24 @@ import { useAsset, useUpdateAsset, useDeleteAsset } from "@/hooks/useAssets";
 import type { AssetInsert } from "@/types/database";
 
 const categories = ["IT Equipment", "Furniture", "Vehicles", "Office Equipment", "Machinery", "Other"];
+
+// Auto-calculate useful life based on category
+const getCategoryUsefulLife = (category: string): number => {
+  switch (category) {
+    case "IT Equipment":
+      return 3; // Computers, laptops, servers
+    case "Furniture":
+      return 7; // Desks, chairs, cabinets
+    case "Vehicles":
+      return 5; // Cars, trucks, vans
+    case "Office Equipment":
+      return 5; // Printers, scanners, phones
+    case "Machinery":
+      return 10; // Heavy equipment, tools
+    default:
+      return 5; // Default for "Other"
+  }
+};
 
 const statuses = [
   { value: "active", label: "Active", color: "bg-green-500 hover:bg-green-600" },
@@ -56,6 +74,7 @@ export default function EditAsset() {
     purchase_price: 0,
     current_value: 0,
     assigned_to: "",
+    assigned_invoice: "",
     description: "",
     serial_number: "",
   });
@@ -66,6 +85,7 @@ export default function EditAsset() {
   const [showOtherCategory, setShowOtherCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
   const [depreciationMethod, setDepreciationMethod] = useState<string>("straight-line");
+  const [usefulLife, setUsefulLife] = useState<number>(5);
 
   // Calculate depreciation based on selected method
   const depreciationData = useMemo(() => {
@@ -98,9 +118,6 @@ export default function EditAsset() {
     let yearlyDepreciation = 0;
     let monthlyDepreciation = 0;
     let depreciationRate = 0;
-
-    // Assumed useful life (in years) - you can make this configurable
-    const usefulLife = 5;
 
     if (depreciationMethod === "straight-line") {
       // Straight-line: (Cost - Salvage Value) / Useful Life
@@ -168,7 +185,7 @@ export default function EditAsset() {
       yearsDiff: yearsDiff.toFixed(2),
       isFutureDate: false,
     };
-  }, [formData.purchase_price, formData.purchase_date, depreciationMethod]);
+  }, [formData.purchase_price, formData.purchase_date, depreciationMethod, usefulLife]);
 
   // Auto-update current_value with calculated remaining value
   useEffect(() => {
@@ -190,6 +207,7 @@ export default function EditAsset() {
         purchase_price: asset.purchase_price,
         current_value: asset.current_value,
         assigned_to: asset.assigned_to,
+        assigned_invoice: asset.assigned_invoice,
         description: asset.description,
         serial_number: asset.serial_number,
         image_url: asset.image_url,
@@ -220,10 +238,13 @@ export default function EditAsset() {
     if (category === "Other") {
       setShowOtherCategory(true);
       setFormData(prev => ({ ...prev, category: "" }));
+      setUsefulLife(5); // Default for custom categories
     } else {
       setShowOtherCategory(false);
       setCustomCategory("");
       handleChange("category", category);
+      // Auto-set useful life based on category
+      setUsefulLife(getCategoryUsefulLife(category));
     }
   };
 
@@ -235,6 +256,9 @@ export default function EditAsset() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    if (!formData.id?.trim()) {
+      newErrors.id = "Asset ID is required";
+    }
     if (!formData.name?.trim()) {
       newErrors.name = "Asset name is required";
     }
@@ -266,7 +290,8 @@ export default function EditAsset() {
     }
 
     try {
-      const { id: _, created_at, ...updateData } = formData as any;
+      const { created_at, ...updateData } = formData as any;
+      // Include the id in updates to allow changing the Asset ID
       await updateAsset.mutateAsync({ id, updates: updateData });
       navigate("/assets");
     } catch (error) {
@@ -406,21 +431,24 @@ export default function EditAsset() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Grid Layout - Asset ID + Asset Name + Image Upload */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Asset ID - Read Only */}
+              {/* Row 1: Asset ID and Asset Name - 2 Columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Asset ID - Editable */}
                 <div className="space-y-2">
                   <Label htmlFor="id" className="flex items-center gap-2">
                     <Hash className="w-4 h-4" />
-                    Asset ID
+                    Asset ID <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="id"
+                    placeholder="e.g., AST-009"
                     value={formData.id}
-                    disabled
-                    className="bg-muted cursor-not-allowed"
+                    onChange={(e) => handleChange("id", e.target.value)}
+                    className={errors.id ? "border-destructive" : ""}
                   />
-                  <p className="text-xs text-muted-foreground">ID cannot be changed</p>
+                  {errors.id && (
+                    <p className="text-sm text-destructive">{errors.id}</p>
+                  )}
                 </div>
 
                 {/* Asset Name */}
@@ -440,7 +468,10 @@ export default function EditAsset() {
                     <p className="text-sm text-destructive">{errors.name}</p>
                   )}
                 </div>
+              </div>
 
+              {/* Row 2: Image Upload and Assigned Invoice - Side by Side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Image Upload */}
                 <div className="space-y-2">
                   <Label>Asset Image</Label>
@@ -449,7 +480,7 @@ export default function EditAsset() {
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors h-[120px]"
+                      className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors h-[140px]"
                     >
                       <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                       <p className="text-sm text-muted-foreground text-center">
@@ -464,7 +495,7 @@ export default function EditAsset() {
                       />
                     </div>
                   ) : (
-                    <div className="relative h-[120px] rounded-lg overflow-hidden">
+                    <div className="relative h-[140px] rounded-lg overflow-hidden">
                       <img
                         src={imagePreview}
                         alt="Asset preview"
@@ -481,6 +512,24 @@ export default function EditAsset() {
                       </Button>
                     </div>
                   )}
+                </div>
+
+                {/* Assigned Invoice */}
+                <div className="space-y-2">
+                  <Label htmlFor="assigned_invoice" className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4" />
+                    Assigned Invoice
+                  </Label>
+                  <Input
+                    id="assigned_invoice"
+                    placeholder="e.g., INV-2024-001"
+                    value={formData.assigned_invoice || ""}
+                    onChange={(e) => handleChange("assigned_invoice", e.target.value)}
+                    className="h-[140px]"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Optional: Reference invoice number for this asset
+                  </p>
                 </div>
               </div>
 
@@ -703,6 +752,30 @@ export default function EditAsset() {
                 </div>
               </div>
 
+              {/* Useful Life Input */}
+              <div className="space-y-2">
+                <Label htmlFor="useful_life" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Useful Life (Years) <span className="text-xs text-muted-foreground ml-2">(Auto-calculated based on category)</span>
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Input
+                    id="useful_life"
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={usefulLife}
+                    onChange={(e) => setUsefulLife(parseInt(e.target.value) || 5)}
+                    className="text-lg font-semibold"
+                  />
+                  <div className="md:col-span-3 flex items-center">
+                    <p className="text-sm text-muted-foreground">
+                      Automatically set based on asset category. You can adjust manually if needed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Depreciation Summary */}
               {depreciationData.isFutureDate ? (
                 <div className="p-6 rounded-lg bg-warning/10 border border-warning/20">
@@ -761,7 +834,7 @@ export default function EditAsset() {
                     <div className="text-sm text-muted-foreground space-y-1">
                       <p><span className="font-medium">Purchase Date:</span> {formData.purchase_date ? new Date(formData.purchase_date).toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not set'}</p>
                       <p><span className="font-medium">Purchase Price:</span> RM {(formData.purchase_price || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      <p><span className="font-medium">Useful Life:</span> 5 years (assumed)</p>
+                      <p><span className="font-medium">Useful Life:</span> {usefulLife} {usefulLife === 1 ? 'year' : 'years'}</p>
                       <p className="mt-2 text-xs italic">
                         The depreciation is calculated from the purchase date to today using the {depreciationMethods.find(m => m.value === depreciationMethod)?.label} method.
                       </p>

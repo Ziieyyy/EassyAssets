@@ -53,8 +53,6 @@ const statuses = [
 
 const depreciationMethods = [
   { value: "straight-line", label: "Straight-Line", description: "Equal depreciation each period" },
-  { value: "declining-balance", label: "Declining Balance", description: "Higher depreciation in early years" },
-  { value: "sum-of-years", label: "Sum-of-Years-Digits", description: "Accelerated depreciation" },
 ];
 
 export default function EditAsset() {
@@ -64,6 +62,7 @@ export default function EditAsset() {
   const deleteAsset = useDeleteAsset();
   const { data: asset, isLoading } = useAsset(id || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const invoiceInputRef = useRef<HTMLInputElement>(null);
   const { t } = useSettings();
   
   const [formData, setFormData] = useState<Partial<AssetInsert>>({
@@ -84,6 +83,8 @@ export default function EditAsset() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [showOtherCategory, setShowOtherCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
   const [depreciationMethod, setDepreciationMethod] = useState<string>("straight-line");
@@ -128,51 +129,6 @@ export default function EditAsset() {
       monthlyDepreciation = yearlyDepreciation / 12;
       accumulatedDepreciation = Math.min(purchasePrice, monthlyDepreciation * monthsDiff);
       depreciationRate = (1 / usefulLife) * 100;
-    } else if (depreciationMethod === "declining-balance") {
-      // Declining Balance: 2 * (1 / Useful Life) * Book Value
-      // Using double-declining balance (200%)
-      const rate = 2 / usefulLife;
-      depreciationRate = rate * 100;
-      let bookValue = purchasePrice;
-      
-      for (let year = 0; year < Math.ceil(yearsDiff); year++) {
-        const yearDepreciation = bookValue * rate;
-        if (year < Math.floor(yearsDiff)) {
-          accumulatedDepreciation += yearDepreciation;
-          bookValue -= yearDepreciation;
-        } else {
-          // Partial year
-          const partialYear = yearsDiff - Math.floor(yearsDiff);
-          accumulatedDepreciation += yearDepreciation * partialYear;
-        }
-      }
-      
-      yearlyDepreciation = purchasePrice * rate;
-      monthlyDepreciation = yearlyDepreciation / 12;
-      accumulatedDepreciation = Math.min(purchasePrice, accumulatedDepreciation);
-    } else if (depreciationMethod === "sum-of-years") {
-      // Sum-of-Years-Digits: (Remaining Life / Sum of Years) * Depreciable Base
-      const sumOfYears = (usefulLife * (usefulLife + 1)) / 2;
-      
-      for (let year = 1; year <= Math.ceil(yearsDiff); year++) {
-        const remainingLife = usefulLife - year + 1;
-        const yearDepreciation = (remainingLife / sumOfYears) * purchasePrice;
-        
-        if (year <= Math.floor(yearsDiff)) {
-          accumulatedDepreciation += yearDepreciation;
-        } else {
-          // Partial year
-          const partialYear = yearsDiff - Math.floor(yearsDiff);
-          accumulatedDepreciation += yearDepreciation * partialYear;
-        }
-      }
-      
-      const currentYear = Math.min(Math.ceil(yearsDiff), usefulLife);
-      const remainingLife = usefulLife - currentYear + 1;
-      yearlyDepreciation = (remainingLife / sumOfYears) * purchasePrice;
-      monthlyDepreciation = yearlyDepreciation / 12;
-      accumulatedDepreciation = Math.min(purchasePrice, accumulatedDepreciation);
-      depreciationRate = (remainingLife / sumOfYears) * 100;
     }
 
     const remainingValue = Math.max(0, purchasePrice - accumulatedDepreciation);
@@ -218,6 +174,11 @@ export default function EditAsset() {
       // Set image preview if image exists
       if (asset.image_url) {
         setImagePreview(asset.image_url);
+      }
+
+      // Set invoice preview if invoice exists
+      if (asset.assigned_invoice) {
+        setInvoicePreview(asset.assigned_invoice);
       }
 
       // Check if category is "Other"
@@ -357,6 +318,50 @@ export default function EditAsset() {
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleInvoiceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setInvoiceFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setInvoicePreview(base64String);
+        // Save the base64 invoice image to formData
+        setFormData(prev => ({ ...prev, assigned_invoice: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveInvoice = () => {
+    setInvoiceFile(null);
+    setInvoicePreview(null);
+    setFormData(prev => ({ ...prev, assigned_invoice: null }));
+    if (invoiceInputRef.current) {
+      invoiceInputRef.current.value = "";
+    }
+  };
+
+  const handleInvoiceDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      setInvoiceFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setInvoicePreview(base64String);
+        // Save the base64 invoice image to formData
+        setFormData(prev => ({ ...prev, assigned_invoice: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleInvoiceDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
@@ -540,17 +545,47 @@ export default function EditAsset() {
 
                 {/* Assigned Invoice */}
                 <div className="space-y-2">
-                  <Label htmlFor="assigned_invoice" className="flex items-center gap-2">
+                  <Label className="flex items-center gap-2">
                     <Receipt className="w-4 h-4" />
                     {t("editAsset.assignedInvoice")}
                   </Label>
-                  <Input
-                    id="assigned_invoice"
-                    placeholder="e.g., INV-2024-001"
-                    value={formData.assigned_invoice || ""}
-                    onChange={(e) => handleChange("assigned_invoice", e.target.value)}
-                    className="h-[140px]"
-                  />
+                  {!invoicePreview ? (
+                    <div
+                      onDrop={handleInvoiceDrop}
+                      onDragOver={handleInvoiceDragOver}
+                      onClick={() => invoiceInputRef.current?.click()}
+                      className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors h-[140px]"
+                    >
+                      <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground text-center">
+                        {t("editAsset.dropImage")}
+                      </p>
+                      <input
+                        ref={invoiceInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleInvoiceUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative h-[140px] rounded-lg overflow-hidden">
+                      <img
+                        src={invoicePreview}
+                        alt="Invoice preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                        onClick={handleRemoveInvoice}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {t("editAsset.invoiceOptional")}
                   </p>
@@ -774,7 +809,7 @@ export default function EditAsset() {
                          method.value === "declining-balance" ? t("editAsset.decliningBalance") :
                          t("editAsset.sumOfYears")}
                       </h4>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground whitespace-pre-line">
                         {method.value === "straight-line" ? t("editAsset.straightLineDesc") :
                          method.value === "declining-balance" ? t("editAsset.decliningBalanceDesc") :
                          t("editAsset.sumOfYearsDesc")}
@@ -861,15 +896,10 @@ export default function EditAsset() {
                 <div className="flex items-start gap-3">
                   <TrendingDown className="w-5 h-5 text-primary mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="font-semibold text-foreground mb-2">How is this calculated?</h4>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p><span className="font-medium">Purchase Date:</span> {formData.purchase_date ? new Date(formData.purchase_date).toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not set'}</p>
-                      <p><span className="font-medium">Purchase Price:</span> RM {(formData.purchase_price || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      <p><span className="font-medium">Useful Life:</span> {usefulLife} {usefulLife === 1 ? 'year' : 'years'}</p>
-                      <p className="mt-2 text-xs italic">
-                        The depreciation is calculated from the purchase date to today using the {depreciationMethods.find(m => m.value === depreciationMethod)?.label} method.
-                      </p>
-                    </div>
+                    <h4 className="font-semibold text-foreground mb-2">{t("editAsset.howCalculated")}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {t("editAsset.calculationFullDesc")}
+                    </p>
                   </div>
                 </div>
               </div>

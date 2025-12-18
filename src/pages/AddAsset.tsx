@@ -25,6 +25,7 @@ export default function AddAsset() {
   const navigate = useNavigate();
   const createAsset = useCreateAsset();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const invoiceInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<Partial<AssetInsert>>({
     id: "",
@@ -43,6 +44,8 @@ export default function AddAsset() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [showOtherCategory, setShowOtherCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
 
@@ -130,7 +133,10 @@ export default function AddAsset() {
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        // Save the base64 image to formData
+        setFormData(prev => ({ ...prev, image_url: base64String }));
       };
       reader.readAsDataURL(file);
     }
@@ -139,6 +145,7 @@ export default function AddAsset() {
   const handleRemoveImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setFormData(prev => ({ ...prev, image_url: null }));
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -151,13 +158,60 @@ export default function AddAsset() {
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        // Save the base64 image to formData
+        setFormData(prev => ({ ...prev, image_url: base64String }));
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleInvoiceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setInvoiceFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setInvoicePreview(base64String);
+        // Save the base64 invoice image to formData
+        setFormData(prev => ({ ...prev, assigned_invoice: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveInvoice = () => {
+    setInvoiceFile(null);
+    setInvoicePreview(null);
+    setFormData(prev => ({ ...prev, assigned_invoice: null }));
+    if (invoiceInputRef.current) {
+      invoiceInputRef.current.value = "";
+    }
+  };
+
+  const handleInvoiceDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      setInvoiceFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setInvoicePreview(base64String);
+        // Save the base64 invoice image to formData
+        setFormData(prev => ({ ...prev, assigned_invoice: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleInvoiceDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
@@ -282,17 +336,47 @@ export default function AddAsset() {
 
                 {/* Assigned Invoice */}
                 <div className="space-y-2">
-                  <Label htmlFor="assigned_invoice" className="flex items-center gap-2">
+                  <Label className="flex items-center gap-2">
                     <Receipt className="w-4 h-4" />
                     Assigned Invoice
                   </Label>
-                  <Input
-                    id="assigned_invoice"
-                    placeholder="e.g., INV-2024-001"
-                    value={formData.assigned_invoice || ""}
-                    onChange={(e) => handleChange("assigned_invoice", e.target.value)}
-                    className="h-[140px]"
-                  />
+                  {!invoicePreview ? (
+                    <div
+                      onDrop={handleInvoiceDrop}
+                      onDragOver={handleInvoiceDragOver}
+                      onClick={() => invoiceInputRef.current?.click()}
+                      className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors h-[140px]"
+                    >
+                      <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground text-center">
+                        Drop image or click
+                      </p>
+                      <input
+                        ref={invoiceInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleInvoiceUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative h-[140px] rounded-lg overflow-hidden">
+                      <img
+                        src={invoicePreview}
+                        alt="Invoice preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                        onClick={handleRemoveInvoice}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Optional: Reference invoice number for this asset
                   </p>

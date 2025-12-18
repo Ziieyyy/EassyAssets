@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, Calendar, DollarSign, MapPin, User, FileText, Hash, Loader2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Package, Calendar, DollarSign, MapPin, User, FileText, Hash, Loader2, Image as ImageIcon, Receipt, X, ZoomIn } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ export default function ViewAsset() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: asset, isLoading, isError, error } = useAsset(id || "");
+  const [isInvoiceZoomed, setIsInvoiceZoomed] = useState(false);
 
   if (isLoading) {
     return (
@@ -109,7 +111,7 @@ export default function ViewAsset() {
           </div>
         </div>
 
-        {/* Details Grid */}
+        {/* Details Grid - Now includes Invoice in 1x2 format */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Basic Information */}
           <Card className="glass border-border">
@@ -153,57 +155,110 @@ export default function ViewAsset() {
             </CardContent>
           </Card>
 
-          {/* Financial Information */}
-          <Card className="glass border-border">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-primary" />
-                Financial Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Purchase Date</p>
-                  <p className="text-foreground font-medium">
-                    {new Date(asset.purchase_date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
+          {/* Invoice Image - In 1x2 Grid */}
+          {asset.assigned_invoice && (
+            <Card className="glass border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Receipt className="w-5 h-5 text-primary" />
+                  Assigned Invoice
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="w-full rounded-lg overflow-hidden border-2 border-border cursor-pointer hover:border-primary transition-all group relative"
+                  onClick={() => setIsInvoiceZoomed(true)}
+                >
+                  <img
+                    src={asset.assigned_invoice}
+                    alt="Invoice"
+                    className="w-full h-auto object-contain bg-secondary/30 group-hover:opacity-90 transition-opacity"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                    <div className="bg-primary text-primary-foreground rounded-full p-3">
+                      <ZoomIn className="w-6 h-6" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Purchase Price</p>
-                  <p className="text-foreground font-medium text-lg">
-                    RM {(asset.purchase_price || 0).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Current Value</p>
-                  <p className="text-foreground font-medium text-lg">
-                    RM {(asset.current_value || 0).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              <div className="pt-3 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">Depreciation</p>
-                  <p className="text-destructive font-medium">
-                    - RM {((asset.purchase_price || 0) - (asset.current_value || 0)).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <p className="text-xs text-muted-foreground text-center mt-2">Click to view full size</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
+
+        {/* Invoice Zoom Modal */}
+        {isInvoiceZoomed && asset.assigned_invoice && (
+          <div 
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setIsInvoiceZoomed(false)}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 text-white hover:bg-white/20 rounded-full"
+              onClick={() => setIsInvoiceZoomed(false)}
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            <img
+              src={asset.assigned_invoice}
+              alt="Invoice - Full Size"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+
+        {/* Financial Information - Full Width */}
+        <Card className="glass border-border">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-primary" />
+              Financial Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex items-start gap-3">
+              <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Purchase Date</p>
+                <p className="text-foreground font-medium">
+                  {new Date(asset.purchase_date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Purchase Price</p>
+                <p className="text-foreground font-medium text-lg">
+                  RM {(asset.purchase_price || 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Current Value</p>
+                <p className="text-foreground font-medium text-lg">
+                  RM {(asset.current_value || 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
+            <div className="md:col-span-3 pt-3 border-t border-border">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Depreciation</p>
+                <p className="text-destructive font-medium">
+                  - RM {((asset.purchase_price || 0) - (asset.current_value || 0)).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Description */}
         {asset.description && (

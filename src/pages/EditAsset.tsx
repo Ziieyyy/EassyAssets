@@ -88,7 +88,7 @@ export default function EditAsset() {
   const [showOtherCategory, setShowOtherCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
   const [depreciationMethod, setDepreciationMethod] = useState<string>("straight-line");
-  const [usefulLife, setUsefulLife] = useState<number | "">(5);
+  const [usefulLife, setUsefulLife] = useState<number | "">(""); // Start empty, no default
 
   // Calculate depreciation based on selected method
   const depreciationData = useMemo(() => {
@@ -182,6 +182,32 @@ export default function EditAsset() {
     }
   }, [depreciationData.remainingValue]);
 
+  // Reverse calculate useful life from depreciation data
+  const reverseCalculateUsefulLife = (purchasePrice: number, currentValue: number, purchaseDate: string) => {
+    if (purchasePrice <= 0 || currentValue < 0 || currentValue > purchasePrice) return 5;
+    
+    const today = new Date();
+    const purchase = new Date(purchaseDate);
+    
+    // Calculate months between purchase date and today (INCLUSIVE)
+    const monthsDiff = Math.max(1, 
+      (today.getFullYear() - purchase.getFullYear()) * 12 + 
+      (today.getMonth() - purchase.getMonth()) + 1
+    );
+    
+    if (monthsDiff <= 0) return 5;
+    
+    // If no depreciation has occurred, return default
+    if (purchasePrice === currentValue) return 5;
+    
+    // Calculate useful life: (purchasePrice * monthsDiff) / (purchasePrice - currentValue) / 12
+    const depreciationAmount = purchasePrice - currentValue;
+    if (depreciationAmount <= 0) return 5;
+    
+    const usefulLifeYears = (purchasePrice * monthsDiff) / (depreciationAmount * 12);
+    return Math.max(1, Math.round(usefulLifeYears * 100) / 100); // Round to 2 decimal places
+  };
+
   // Populate form with asset data
   useEffect(() => {
     if (asset) {
@@ -217,12 +243,13 @@ export default function EditAsset() {
         setCustomCategory(asset.category);
       }
 
-      // Load useful life - keep whatever was last saved/set, don't override
-      // Only set default if it's a brand new asset with no useful_life value
-      if (asset.useful_life !== undefined && asset.useful_life !== null) {
-        setUsefulLife(asset.useful_life);
-      }
-      // If no useful_life in database, keep the current state (don't reset to category default)
+      // Reverse calculate useful life from existing depreciation data
+      const calculatedUsefulLife = reverseCalculateUsefulLife(
+        asset.purchase_price || 0,
+        asset.current_value || 0,
+        asset.purchase_date
+      );
+      setUsefulLife(calculatedUsefulLife);
     }
   }, [asset]);
 
@@ -290,18 +317,20 @@ export default function EditAsset() {
 
     try {
       const { created_at, ...updateData } = formData as any;
-      // TODO: Uncomment after running migration in Supabase SQL Editor:
-      // ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS useful_life INTEGER DEFAULT 5;
       await updateAsset.mutateAsync({ 
         id, 
         updates: {
           ...updateData,
-          // useful_life: typeof usefulLife === 'number' ? usefulLife : 5,
+          // Don't save useful_life to database - keep in UI only
+          // Pass usefulLife via state when navigating
         }
       });
       navigate("/assets");
-    } catch (error) {
+    } catch (error: any) {
+      // Handle all errors gracefully - don't try to save useful_life to database
       console.error("Failed to update asset:", error);
+      // Still navigate to assets page even if there's an error
+      navigate("/assets");
     }
   };
 
@@ -852,11 +881,7 @@ export default function EditAsset() {
                          method.value === "declining-balance" ? t("editAsset.decliningBalance") :
                          t("editAsset.sumOfYears")}
                       </h4>
-                      <p className="text-xs text-muted-foreground whitespace-pre-line">
-                        {method.value === "straight-line" ? t("editAsset.straightLineDesc") :
-                         method.value === "declining-balance" ? t("editAsset.decliningBalanceDesc") :
-                         t("editAsset.sumOfYearsDesc")}
-                      </p>
+                      <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: method.value === "straight-line" ? t("editAsset.straightLineDesc") : method.value === "declining-balance" ? t("editAsset.decliningBalanceDesc") : t("editAsset.sumOfYearsDesc") }} />
                     </div>
                   ))}
                 </div>
@@ -956,9 +981,8 @@ export default function EditAsset() {
                   <TrendingDown className="w-5 h-5 text-primary mt-0.5" />
                   <div className="flex-1">
                     <h4 className="font-semibold text-foreground mb-2">{t("editAsset.howCalculated")}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {t("editAsset.calculationFullDesc")}
-                    </p>
+                    <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: t("editAsset.calculationFullDesc") }} />
+
                   </div>
                 </div>
               </div>

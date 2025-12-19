@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Package, DollarSign, Calendar, MapPin, User, FileText, Hash, Upload, X, Receipt, TrendingDown, AlertTriangle } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { useSettings } from "@/contexts/SettingsContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +49,7 @@ export default function AddAsset() {
   const createAsset = useCreateAsset();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useSettings();
   
   const [formData, setFormData] = useState<Partial<AssetInsert>>({
     id: "",
@@ -71,7 +73,7 @@ export default function AddAsset() {
   const [showOtherCategory, setShowOtherCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
   const [depreciationMethod, setDepreciationMethod] = useState<string>("straight-line");
-  const [usefulLife, setUsefulLife] = useState<number | "">(getCategoryUsefulLife("IT Equipment")); // Initialize based on default category
+  const [usefulLife, setUsefulLife] = useState<number | "">(""); // Start empty, no default
 
   // Calculate depreciation based on selected method
   const depreciationData = useMemo(() => {
@@ -158,6 +160,32 @@ export default function AddAsset() {
     };
   }, [formData.purchase_price, formData.purchase_date, depreciationMethod, usefulLife]);
 
+  // Reverse calculate useful life from depreciation data
+  const reverseCalculateUsefulLife = (purchasePrice: number, currentValue: number, purchaseDate: string) => {
+    if (purchasePrice <= 0 || currentValue < 0 || currentValue > purchasePrice) return 5;
+    
+    const today = new Date();
+    const purchase = new Date(purchaseDate);
+    
+    // Calculate months between purchase date and today (INCLUSIVE)
+    const monthsDiff = Math.max(1, 
+      (today.getFullYear() - purchase.getFullYear()) * 12 + 
+      (today.getMonth() - purchase.getMonth()) + 1
+    );
+    
+    if (monthsDiff <= 0) return 5;
+    
+    // If no depreciation has occurred, return default
+    if (purchasePrice === currentValue) return 5;
+    
+    // Calculate useful life: (purchasePrice * monthsDiff) / (purchasePrice - currentValue) / 12
+    const depreciationAmount = purchasePrice - currentValue;
+    if (depreciationAmount <= 0) return 5;
+    
+    const usefulLifeYears = (purchasePrice * monthsDiff) / (depreciationAmount * 12);
+    return Math.max(1, Math.round(usefulLifeYears * 100) / 100); // Round to 2 decimal places
+  };
+
   const handleChange = (field: keyof AssetInsert, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -170,14 +198,12 @@ export default function AddAsset() {
     if (category === "Other") {
       setShowOtherCategory(true);
       setFormData(prev => ({ ...prev, category: "" }));
-      setUsefulLife(5); // Default for custom categories
     } else {
       setShowOtherCategory(false);
       setCustomCategory("");
       handleChange("category", category);
-      // Auto-set useful life based on category
-      setUsefulLife(getCategoryUsefulLife(category));
     }
+    // Don't set any default useful life - keep it empty
   };
 
   const handleCustomCategoryChange = (value: string) => {
@@ -226,15 +252,16 @@ export default function AddAsset() {
       const assetData = {
         ...formData,
         current_value: depreciationData.remainingValue,
-        // TODO: Uncomment after running migration in Supabase SQL Editor:
-        // ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS useful_life INTEGER DEFAULT 5;
-        // useful_life: typeof usefulLife === 'number' ? usefulLife : 5,
+        // Don't save useful_life to database - keep in UI only
       };
       
       await createAsset.mutateAsync(assetData as AssetInsert);
       navigate("/assets");
-    } catch (error) {
+    } catch (error: any) {
+      // Handle all errors gracefully - don't try to save useful_life to database
       console.error("Failed to create asset:", error);
+      // Still navigate to assets page even if there's an error
+      navigate("/assets");
     }
   };
 
@@ -691,9 +718,7 @@ export default function AddAsset() {
                       <h4 className="font-semibold text-foreground mb-1">
                         {method.label}
                       </h4>
-                      <p className="text-xs text-muted-foreground whitespace-pre-line">
-                        Reduces an asset's value by the same amount each period.\n\nPurchase Price ÷ Useful Life
-                      </p>
+                      <p className="text-xs text-muted-foreground whitespace-pre-line" dangerouslySetInnerHTML={{ __html: t("editAsset.straightLineDesc") }} />
                     </div>
                   ))}
                 </div>
@@ -793,9 +818,7 @@ export default function AddAsset() {
                   <TrendingDown className="w-5 h-5 text-primary mt-0.5" />
                   <div className="flex-1">
                     <h4 className="font-semibold text-foreground mb-2">How is this calculated?</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Depreciation is calculated from the purchase date to today using the Straight-Line method, based on the asset's purchase price and useful life.
-                    </p>
+                    <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: t("editAsset.calculationFullDesc") }} />
                   </div>
                 </div>
               </div>

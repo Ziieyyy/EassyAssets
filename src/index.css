@@ -1,0 +1,322 @@
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/dm-sans/600.css";
+@import "@fontsource/dm-sans/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Asset Management System Design System */
+
+@layer base {
+  :root {
+    /* Light Theme - Purple Color Palette */
+    --background: 303 96% 97%; /* Very light purple rgb(253, 247, 252) */
+    --foreground: 237 42% 20%; /* Dark purple for text */
+
+    --card: 303 96% 95%; /* Light purple card rgb(250, 235, 248) */
+    --card-foreground: 237 42% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 237 42% 20%;
+
+    /* Custom color palette */
+    --primary: 237 42% 53%; /* rgb(78, 86, 192) - Primary action */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 268 62% 62%; /* rgb(155, 93, 224) - Secondary action */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 293 67% 92%; /* Light accent tint rgb(245, 223, 245) */
+    --muted-foreground: 237 42% 40%;
+
+    --accent: 293 67% 75%; /* rgb(215, 143, 238) - Accent/Hover */
+    --accent-foreground: 237 42% 20%;
+
+    --surface: 303 96% 90%; /* rgb(253, 207, 250) - Background/Surface */
+    --surface-foreground: 237 42% 20%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 46%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 293 50% 85%; /* Soft purple border */
+    --input: 293 50% 90%; /* Light purple input bg */
+    --ring: 237 42% 53%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 303 96% 95%; /* Light purple sidebar */
+    --sidebar-foreground: 237 42% 20%;
+    --sidebar-primary: 237 42% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 293 67% 92%;
+    --sidebar-accent-foreground: 237 42% 20%;
+    --sidebar-border: 293 50% 85%;
+    --sidebar-ring: 237 42% 53%;
+
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, rgb(78, 86, 192), rgb(155, 93, 224));
+    --gradient-secondary: linear-gradient(135deg, rgb(155, 93, 224), rgb(215, 143, 238));
+    --gradient-card: linear-gradient(145deg, rgb(253, 247, 252), rgb(250, 235, 248));
+    --gradient-glow: 0 0 40px rgb(78, 86, 192, 0.15);
+    --gradient-hover: linear-gradient(135deg, rgb(215, 143, 238), rgb(253, 207, 250));
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Custom color palette - Dark theme */
+    --primary: 237 42% 58%; /* Slightly brighter rgb(78, 86, 192) for dark */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 268 62% 67%; /* Slightly brighter rgb(155, 93, 224) for dark */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 293 67% 75%; /* rgb(215, 143, 238) - Accent/Hover */
+    --accent-foreground: 222 47% 11%;
+
+    --surface: 303 50% 25%; /* Darker variant of rgb(253, 207, 250) */
+    --surface-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 76% 46%;
+    --success-foreground: 222 47% 11%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 237 42% 58%;
+
+    --sidebar-background: 222 47% 9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 237 42% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 237 42% 58%;
+
+    /* Custom gradients - Dark theme */
+    --gradient-primary: linear-gradient(135deg, rgb(88, 96, 202), rgb(165, 103, 234));
+    --gradient-secondary: linear-gradient(135deg, rgb(165, 103, 234), rgb(215, 143, 238));
+    --gradient-card: linear-gradient(145deg, hsl(222 47% 14%), hsl(222 47% 11%));
+    --gradient-glow: 0 0 40px rgb(155, 93, 224, 0.25);
+    --gradient-hover: linear-gradient(135deg, rgb(165, 103, 234), rgb(215, 143, 238));
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg;
+  }
+  
+  .glow-primary {
+    box-shadow: var(--gradient-glow);
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  /* ========================================
+   * HOVER ANIMATION UTILITIES
+   * ========================================
+   * Color Palette:
+   * - Primary (rgb(78, 86, 192))   - Main actions
+   * - Secondary (rgb(155, 93, 224)) - Secondary actions  
+   * - Accent (rgb(215, 143, 238))   - Hover/focus states
+   * - Surface (rgb(253, 207, 250))  - Backgrounds
+   * ======================================== */
+
+  /* Lift Effect - Elevates element on hover */
+  .hover-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-lift:hover {
+    @apply -translate-y-1;
+    box-shadow: 0 10px 30px rgba(155, 93, 224, 0.3), 0 4px 12px rgba(78, 86, 192, 0.2);
+  }
+
+  .dark .hover-lift:hover {
+    box-shadow: 0 10px 30px rgba(165, 103, 234, 0.4), 0 4px 12px rgba(88, 96, 202, 0.3);
+  }
+
+  /* Glow Effect - Adds colored glow on hover */
+  .hover-glow {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 20px rgb(78 86 192 / 0.3), 0 0 40px rgb(155 93 224 / 0.2);
+  }
+
+  .dark .hover-glow:hover {
+    box-shadow: 0 0 20px rgb(155 93 224 / 0.4), 0 0 40px rgb(215 143 238 / 0.3);
+  }
+
+  /* Scale Effect - Slightly enlarges on hover */
+  .hover-scale {
+    @apply transition-transform duration-300 ease-out;
+  }
+
+  .hover-scale:hover {
+    @apply scale-105;
+  }
+
+  /* Border Effect - Highlights border on hover */
+  .hover-border {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-border:hover {
+    border-color: rgb(155, 93, 224);
+    box-shadow: 0 0 0 1px rgb(155, 93, 224, 0.3);
+  }
+
+  /* Background Primary - Changes to primary color on hover */
+  .hover-bg-primary {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-bg-primary:hover {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: 0 4px 12px rgb(78 86 192 / 0.3);
+  }
+
+  .dark .hover-bg-primary:hover {
+    box-shadow: 0 4px 12px rgb(88 96 202 / 0.4);
+  }
+
+  /* Background Secondary - Changes to secondary color on hover */
+  .hover-bg-secondary {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-bg-secondary:hover {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    box-shadow: 0 4px 12px rgb(155 93 224 / 0.3);
+  }
+
+  .dark .hover-bg-secondary:hover {
+    box-shadow: 0 4px 12px rgb(165 103 234 / 0.4);
+  }
+
+  /* Background Accent - Changes to accent color on hover */
+  .hover-bg-accent {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .hover-bg-accent:hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    box-shadow: 0 4px 12px rgb(215 143 238 / 0.3);
+  }
+
+  /* Gradient Overlay - Adds gradient on hover */
+  .hover-gradient {
+    @apply transition-all duration-300 ease-out relative overflow-hidden;
+  }
+
+  .hover-gradient::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: var(--gradient-hover);
+  }
+
+  .hover-gradient:hover::before {
+    @apply opacity-20;
+  }
+
+  /* Shine Effect - Animated light sweep on hover */
+  .hover-shine {
+    @apply relative overflow-hidden;
+  }
+
+  .hover-shine::after {
+    content: '';
+    @apply absolute top-0 -left-full h-full w-full;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease-out;
+  }
+
+  .hover-shine:hover::after {
+    @apply left-full;
+  }
+
+  .dark .hover-shine::after {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  }
+
+  /* Chart-specific hover effects */
+  .recharts-surface {
+    @apply transition-all duration-300;
+  }
+
+  .recharts-layer:hover {
+    @apply cursor-pointer;
+  }
+
+  .recharts-pie-sector:hover {
+    @apply transition-all duration-300;
+    filter: brightness(1.2) drop-shadow(0 4px 12px rgba(155, 93, 224, 0.4));
+    transform: scale(1.05);
+    transform-origin: center;
+  }
+
+  .recharts-active-dot {
+    @apply transition-all duration-300;
+    filter: drop-shadow(0 0 8px rgba(78, 86, 192, 0.6));
+  }
+
+  .recharts-legend-item:hover {
+    @apply transition-all duration-200;
+  }
+
+  .recharts-legend-item:hover .recharts-legend-item-text {
+    @apply font-semibold;
+  }
+
+  /* Fix for Select component text visibility in Chrome */
+  [data-radix-select-trigger] > span {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .dark [data-radix-select-trigger] > span {
+    color: hsl(var(--foreground)) !important;
+  }
+}

@@ -124,10 +124,6 @@ export default function Assets() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2">
-              <Download className="w-4 h-4" />
-              {t("assets.export")}
-            </Button>
             <Button 
               className="gap-2 rounded-full"
               onClick={() => navigate("/assets/add")}

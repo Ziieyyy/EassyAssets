@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS public.assets (
     assigned_to TEXT NOT NULL,
     description TEXT,
     serial_number TEXT,
-    image_url TEXT
+    image_url TEXT,
+    useful_life INTEGER
 );
 
 -- Create maintenance_tasks table

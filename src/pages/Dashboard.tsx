@@ -4,6 +4,7 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { AssetValueChart } from "@/components/dashboard/AssetValueChart";
 import { AssetCategoryChart } from "@/components/dashboard/AssetCategoryChart";
 import { RecentAssets } from "@/components/dashboard/RecentAssets";
+import { AssetDepreciationSchedule } from "@/components/dashboard/AssetDepreciationSchedule";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAssetStats, useAssets } from "@/hooks/useAssets";
@@ -50,29 +51,35 @@ export default function Dashboard() {
     const today = new Date();
     const fiscalYearStart = new Date(today.getFullYear(), 0, 1); // January 1st of current year
     
-    let depreciation = 0;
-    assets.forEach(asset => {
+    // Pre-calculate depreciation data to avoid repeated calculations
+    const depreciationData = assets.map(asset => {
       const purchaseDate = new Date(asset.purchase_date);
       const purchasePrice = asset.purchase_price || 0;
       const currentValue = asset.current_value || 0;
       
-      // Only calculate depreciation for assets purchased before fiscal year start
-      if (purchaseDate < fiscalYearStart) {
-        const totalMonths = Math.max(1,
-          (today.getFullYear() - purchaseDate.getFullYear()) * 12 +
-          (today.getMonth() - purchaseDate.getMonth()) + 1 // +1 to include purchase month
-        );
-        
-        const fiscalYearMonths = Math.max(0,
+      // Calculate depreciation parameters once
+      const totalMonths = Math.max(1,
+        (today.getFullYear() - purchaseDate.getFullYear()) * 12 +
+        (today.getMonth() - purchaseDate.getMonth()) + 1 // +1 to include purchase month
+      );
+      
+      const totalDepreciation = purchasePrice - currentValue;
+      const monthlyDepreciation = totalDepreciation / totalMonths;
+      
+      return {
+        purchaseDate,
+        monthlyDepreciation,
+        fiscalYearMonths: purchaseDate < fiscalYearStart ? Math.max(0,
           (today.getFullYear() - fiscalYearStart.getFullYear()) * 12 +
           (today.getMonth() - fiscalYearStart.getMonth()) + 1 // +1 to include start month
-        );
-        
-        const totalDepreciation = purchasePrice - currentValue;
-        const monthlyDepreciation = totalDepreciation / totalMonths;
-        depreciation += monthlyDepreciation * fiscalYearMonths;
-      }
+        ) : 0
+      };
     });
+    
+    // Calculate total depreciation using pre-calculated data
+    const depreciation = depreciationData.reduce((sum, asset) => {
+      return sum + (asset.monthlyDepreciation * asset.fiscalYearMonths);
+    }, 0);
     
     return `RM ${Math.round(depreciation).toLocaleString()}`;
   }, [assets]);
@@ -141,7 +148,12 @@ export default function Dashboard() {
         <AssetCategoryChart />
       </div>
 
-      {/* Bottom Row */}
+      {/* Depreciation Schedule */}
+      <div className="grid grid-cols-1 gap-6">
+        <AssetDepreciationSchedule />
+      </div>
+
+      {/* Recent Assets */}
       <div className="grid grid-cols-1 gap-6">
         <RecentAssets />
       </div>

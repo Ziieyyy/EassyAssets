@@ -37,9 +37,32 @@ export function AssetValueChart() {
 
     const today = new Date();
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const data: { month: string; value: number }[] = [];
-
+    
+    // Pre-calculate asset depreciation parameters to avoid repeated calculations
+    const assetDepreciationData = assets.map(asset => {
+      const purchaseDate = new Date(asset.purchase_date);
+      const purchasePrice = asset.purchase_price || 0;
+      const currentValue = asset.current_value || 0;
+      
+      // Calculate depreciation parameters once
+      const monthsSincePurchase = Math.max(1, 
+        (today.getFullYear() - purchaseDate.getFullYear()) * 12 + 
+        (today.getMonth() - purchaseDate.getMonth()) + 1 // +1 to include purchase month
+      );
+      
+      const totalDepreciation = purchasePrice - currentValue;
+      const monthlyDepreciation = totalDepreciation / monthsSincePurchase;
+      
+      return {
+        purchaseDate,
+        purchasePrice,
+        monthlyDepreciation,
+        currentValue
+      };
+    });
+    
     // Generate data for the past 12 months
+    const data: { month: string; value: number }[] = [];
     for (let i = 11; i >= 0; i--) {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const monthName = monthNames[date.getMonth()];
@@ -47,29 +70,17 @@ export function AssetValueChart() {
       // Calculate total value of all assets at this point in time
       let totalValue = 0;
       
-      assets.forEach(asset => {
-        const purchaseDate = new Date(asset.purchase_date);
-        
+      // Use pre-calculated depreciation data instead of recalculating for each month
+      assetDepreciationData.forEach(depreciation => {
         // Only include assets that were purchased before or during this month
-        if (purchaseDate <= date) {
-          const purchasePrice = asset.purchase_price || 0;
-          const currentValue = asset.current_value || 0;
-          
-          // Calculate depreciation per month (INCLUSIVE of purchase month)
-          const monthsSincePurchase = Math.max(1, 
-            (today.getFullYear() - purchaseDate.getFullYear()) * 12 + 
-            (today.getMonth() - purchaseDate.getMonth()) + 1 // +1 to include purchase month
-          );
-          
+        if (depreciation.purchaseDate <= date) {
           const monthsToDate = Math.max(0,
-            (date.getFullYear() - purchaseDate.getFullYear()) * 12 + 
-            (date.getMonth() - purchaseDate.getMonth()) + 1 // +1 to include purchase month
+            (date.getFullYear() - depreciation.purchaseDate.getFullYear()) * 12 + 
+            (date.getMonth() - depreciation.purchaseDate.getMonth()) + 1 // +1 to include purchase month
           );
           
-          // Calculate value at this specific month
-          const totalDepreciation = purchasePrice - currentValue;
-          const monthlyDepreciation = totalDepreciation / monthsSincePurchase;
-          const valueAtMonth = purchasePrice - (monthlyDepreciation * monthsToDate);
+          // Calculate value at this specific month using pre-calculated parameters
+          const valueAtMonth = depreciation.purchasePrice - (depreciation.monthlyDepreciation * monthsToDate);
           
           totalValue += Math.max(0, valueAtMonth);
         }

@@ -79,6 +79,12 @@ export default function EditAsset() {
     description: "",
     serial_number: "",
   });
+  
+  // Local state for additional fields not in the database yet
+  const [invoiceNumber, setInvoiceNumber] = useState<string>("");
+  const [supplierName, setSupplierName] = useState<string>("");
+  const [unit, setUnit] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -250,6 +256,12 @@ export default function EditAsset() {
         asset.purchase_date
       );
       setUsefulLife(calculatedUsefulLife);
+      
+      // Initialize new fields that are not in the database
+      setInvoiceNumber(""); // Default to empty
+      setSupplierName(""); // Default to empty
+      setUnit(1); // Default to 1
+      setTotal(asset.purchase_price || 0); // Default to purchase price
     }
   }, [asset]);
 
@@ -258,6 +270,20 @@ export default function EditAsset() {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
+    }
+  };
+  
+  // Calculate total when unit or unit price changes
+  useEffect(() => {
+    const calculatedTotal = unit * (formData.purchase_price || 0);
+    setTotal(calculatedTotal);
+  }, [unit, formData.purchase_price]);
+  
+  const handleUnitChange = (value: number) => {
+    setUnit(value);
+    // Clear error when user starts typing
+    if (errors.unit) {
+      setErrors(prev => ({ ...prev, unit: "" }));
     }
   };
 
@@ -282,11 +308,9 @@ export default function EditAsset() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.id?.trim()) {
-      newErrors.id = t("editAsset.idRequired");
-    }
+
     if (!formData.name?.trim()) {
-      newErrors.name = t("editAsset.nameRequired");
+      newErrors.name = "Asset detail is required";
     }
     if (!formData.category) {
       newErrors.category = t("editAsset.categoryRequired");
@@ -298,7 +322,10 @@ export default function EditAsset() {
       newErrors.purchase_date = t("editAsset.purchaseDateRequired");
     }
     if (!formData.purchase_price || formData.purchase_price <= 0) {
-      newErrors.purchase_price = t("editAsset.purchasePriceRequired");
+      newErrors.purchase_price = "Unit price must be greater than 0";
+    }
+    if (unit < 0) {
+      newErrors.unit = "Unit must be a valid number";
     }
     if (!formData.assigned_to?.trim()) {
       newErrors.assigned_to = t("editAsset.assignedToRequired");
@@ -538,7 +565,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="id" className="flex items-center gap-2">
                     <Hash className="w-4 h-4" />
-                    {t("editAsset.assetId")} <span className="text-destructive">{t("editAsset.required")}</span>
+                    {t("editAsset.assetId")}
                   </Label>
                   <Input
                     id="id"
@@ -556,7 +583,7 @@ export default function EditAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="name" className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
-                    {t("editAsset.assetName")} <span className="text-destructive">{t("editAsset.required")}</span>
+                    Asset Detail <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -797,31 +824,76 @@ export default function EditAsset() {
 
                 {/* Purchase Price */}
                 <div className="space-y-2">
-                  <Label htmlFor="purchase_price" className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4" />
-                    {t("editAsset.purchasePrice")} <span className="text-destructive">{t("editAsset.required")}</span>
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                      RM
-                    </span>
-                    <Input
-                      id="purchase_price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={formData.purchase_price || ""}
-                      onChange={(e) => handleChange("purchase_price", parseFloat(e.target.value) || 0)}
-                      className={cn(
-                        "pl-10",
-                        errors.purchase_price ? "border-destructive" : ""
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="purchase_price" className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        Unit Price <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                          RM
+                        </span>
+                        <Input
+                          id="purchase_price"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={formData.purchase_price || ""}
+                          onChange={(e) => handleChange("purchase_price", parseFloat(e.target.value) || 0)}
+                          className={cn(
+                            "pl-10",
+                            errors.purchase_price ? "border-destructive" : ""
+                          )}
+                        />
+                      </div>
+                      {errors.purchase_price && (
+                        <p className="text-sm text-destructive">{errors.purchase_price}</p>
                       )}
-                    />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="unit" className="flex items-center gap-2">
+                        <Package className="w-4 h-4" />
+                        Unit <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="unit"
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="1"
+                        value={unit || ""}
+                        onChange={(e) => handleUnitChange(parseInt(e.target.value) || 0)}
+                        className={errors.unit ? "border-destructive" : ""}
+                      />
+                      {errors.unit && (
+                        <p className="text-sm text-destructive">{errors.unit}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="total" className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        Total
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                          RM
+                        </span>
+                        <Input
+                          id="total"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={total || 0}
+                          readOnly
+                          className="pl-10 bg-muted cursor-not-allowed"
+                        />
+                      </div>
+
+                    </div>
                   </div>
-                  {errors.purchase_price && (
-                    <p className="text-sm text-destructive">{errors.purchase_price}</p>
-                  )}
                 </div>
               </div>
 
@@ -1032,6 +1104,38 @@ export default function EditAsset() {
                   />
                 </div>
               </div>
+              
+              {/* 2-Column Grid: Invoice Number | Supplier Name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {/* Invoice Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="invoice_number" className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4" />
+                    Invoice Number
+                  </Label>
+                  <Input
+                    id="invoice_number"
+                    placeholder="e.g., INV-001"
+                    value={invoiceNumber || ""}
+                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                  />
+                </div>
+
+                {/* Supplier Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="supplier_name" className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Supplier Name
+                  </Label>
+                  <Input
+                    id="supplier_name"
+                    placeholder="e.g., ABC Supplier Sdn Bhd"
+                    value={supplierName || ""}
+                    onChange={(e) => setSupplierName(e.target.value)}
+                  />
+                </div>
+              </div>
+              
             </CardContent>
           </Card>
 

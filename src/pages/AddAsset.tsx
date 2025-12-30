@@ -12,6 +12,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useCreateAsset } from "@/hooks/useAssets";
 import type { AssetInsert } from "@/types/database";
+import { toast } from "sonner";
+
 
 const categories = ["IT Equipment", "Furniture", "Vehicles", "Office Equipment", "Machinery", "Other"];
 
@@ -59,11 +61,21 @@ export default function AddAsset() {
     status: "active",
     purchase_date: new Date().toISOString().split('T')[0],
     purchase_price: 0,
+    current_value: 0,
     assigned_to: "",
     assigned_invoice: "",
     description: "",
     serial_number: "",
+    useful_life: 5,
   });
+  
+  const [disposalPrice, setDisposalPrice] = useState<number | "">("");
+  
+  // Local state for additional fields not in the database yet
+  const [invoiceNumber, setInvoiceNumber] = useState<string>("");
+  const [supplierName, setSupplierName] = useState<string>("");
+  const [unit, setUnit] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -73,14 +85,23 @@ export default function AddAsset() {
   const [showOtherCategory, setShowOtherCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
   const [depreciationMethod, setDepreciationMethod] = useState<string>("straight-line");
-  const [usefulLife, setUsefulLife] = useState<number | "">(""); // Start empty, no default
+  const [usefulLife, setUsefulLife] = useState<number | "">(""); // Start with empty value
+  const [hasUserModifiedUsefulLife, setHasUserModifiedUsefulLife] = useState<boolean>(false);
+
+  // Update usefulLife in formData when usefulLife state changes
+  useEffect(() => {
+    if (typeof usefulLife === 'number') {
+      setFormData(prev => ({ ...prev, useful_life: usefulLife }));
+    }
+  }, [usefulLife]);
 
   // Calculate depreciation based on selected method
   const depreciationData = useMemo(() => {
     const purchasePrice = formData.purchase_price || 0;
     const purchaseDate = formData.purchase_date ? new Date(formData.purchase_date) : new Date();
     const today = new Date();
-    const usefulLifeYears = typeof usefulLife === 'number' && usefulLife > 0 ? usefulLife : 5; // Use 5 as fallback only for calculation
+    // Use the usefulLife state directly since it's manually set by user
+    const usefulLifeYears = (typeof usefulLife === 'number' && usefulLife > 0) ? usefulLife : 5;
     
     // Calculate months between purchase date and today (INCLUSIVE of purchase month)
     // The purchase month counts as the first month of depreciation
@@ -193,6 +214,30 @@ export default function AddAsset() {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
   };
+  
+  // Calculate total when unit or unit price changes
+  useEffect(() => {
+    const calculatedTotal = unit * (formData.purchase_price || 0);
+    setTotal(calculatedTotal);
+  }, [unit, formData.purchase_price]);
+  
+  // Update current_value when status changes to disposed or disposalPrice changes
+  useEffect(() => {
+    if (formData.status === "disposed" && disposalPrice !== "" && disposalPrice !== 0) {
+      setFormData(prev => ({ ...prev, current_value: disposalPrice }));
+    } else {
+      // Calculate current value based on depreciation when not disposed
+      setFormData(prev => ({ ...prev, current_value: depreciationData.remainingValue }));
+    }
+  }, [formData.status, disposalPrice, depreciationData.remainingValue]);
+  
+  const handleUnitChange = (value: number) => {
+    setUnit(value);
+    // Clear error when user starts typing
+    if (errors.unit) {
+      setErrors(prev => ({ ...prev, unit: "" }));
+    }
+  };
 
   const handleCategoryChange = (category: string) => {
     if (category === "Other") {
@@ -203,7 +248,6 @@ export default function AddAsset() {
       setCustomCategory("");
       handleChange("category", category);
     }
-    // Don't set any default useful life - keep it empty
   };
 
   const handleCustomCategoryChange = (value: string) => {
@@ -214,11 +258,12 @@ export default function AddAsset() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+
     if (!formData.id?.trim()) {
       newErrors.id = "Asset ID is required";
     }
     if (!formData.name?.trim()) {
-      newErrors.name = "Asset name is required";
+      newErrors.name = "Asset detail is required";
     }
     if (!formData.category) {
       newErrors.category = "Category is required";
@@ -230,10 +275,16 @@ export default function AddAsset() {
       newErrors.purchase_date = "Purchase date is required";
     }
     if (!formData.purchase_price || formData.purchase_price <= 0) {
-      newErrors.purchase_price = "Purchase price must be greater than 0";
+      newErrors.purchase_price = "Unit price must be greater than 0";
+    }
+    if (unit < 0) {
+      newErrors.unit = "Unit must be a valid number";
     }
     if (!formData.assigned_to?.trim()) {
       newErrors.assigned_to = "Assigned to is required";
+    }
+    if (typeof usefulLife !== 'number' || usefulLife <= 0) {
+      newErrors.useful_life = "Useful life must be greater than 0";
     }
 
     setErrors(newErrors);
@@ -248,20 +299,43 @@ export default function AddAsset() {
     }
 
     try {
+
+      
       // Use calculated remaining value as current_value
+      // Include additional form fields that are not in the database schema yet
+      let currentAssetValue = depreciationData.remainingValue;
+      
+      // If asset is disposed, use the disposal price as the current value
+      if (formData.status === "disposed" && disposalPrice !== "" && disposalPrice !== 0) {
+        currentAssetValue = disposalPrice;
+      }
+      
       const assetData = {
         ...formData,
-        current_value: depreciationData.remainingValue,
-        // Don't save useful_life to database - keep in UI only
+        current_value: currentAssetValue,
+        useful_life: typeof usefulLife === 'number' ? usefulLife : 5, // Ensure useful_life is included in the database
       };
       
       await createAsset.mutateAsync(assetData as AssetInsert);
       navigate("/assets");
+      toast.success('Asset created successfully');
     } catch (error: any) {
-      // Handle all errors gracefully - don't try to save useful_life to database
       console.error("Failed to create asset:", error);
-      // Still navigate to assets page even if there's an error
-      navigate("/assets");
+      
+      // Check if this is an RLS policy error
+      if (error.message?.includes('violates row-level security policy')) {
+        toast.error('Authentication error: Please ensure you are logged in and try again');
+      } else if (error.message?.includes('company not assigned') || error.message?.includes('User profile not found')) {
+        toast.error('Profile setup issue: Please try logging out and back in, or contact support');
+      } else if (error.message?.includes('Failed to create company for user')) {
+        toast.error('Company setup issue: This may require administrative setup. Please contact support for assistance.');
+      } else if (error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+        toast.error('Server error: Please try again or contact support');
+      } else {
+        toast.error(`Failed to create asset: ${error.message || 'Unknown error'}`);
+      }
+      
+      throw error; // Re-throw the error so it can be properly handled
     }
   };
 
@@ -417,7 +491,7 @@ export default function AddAsset() {
                 <div className="space-y-2">
                   <Label htmlFor="name" className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
-                    Asset Name <span className="text-destructive">*</span>
+                    Asset Detail <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -658,31 +732,76 @@ export default function AddAsset() {
 
                 {/* Purchase Price with Currency Symbol */}
                 <div className="space-y-2">
-                  <Label htmlFor="purchase_price" className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4" />
-                    Purchase Price <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                      RM
-                    </span>
-                    <Input
-                      id="purchase_price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={formData.purchase_price || ""}
-                      onChange={(e) => handleChange("purchase_price", parseFloat(e.target.value) || 0)}
-                      className={cn(
-                        "pl-10",
-                        errors.purchase_price ? "border-destructive" : ""
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="purchase_price" className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        Unit Price <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                          RM
+                        </span>
+                        <Input
+                          id="purchase_price"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={formData.purchase_price || ""}
+                          onChange={(e) => handleChange("purchase_price", parseFloat(e.target.value) || 0)}
+                          className={cn(
+                            "pl-10",
+                            errors.purchase_price ? "border-destructive" : ""
+                          )}
+                        />
+                      </div>
+                      {errors.purchase_price && (
+                        <p className="text-sm text-destructive">{errors.purchase_price}</p>
                       )}
-                    />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="unit" className="flex items-center gap-2">
+                        <Package className="w-4 h-4" />
+                        Unit <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="unit"
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="1"
+                        value={unit || ""}
+                        onChange={(e) => handleUnitChange(parseInt(e.target.value) || 0)}
+                        className={errors.unit ? "border-destructive" : ""}
+                      />
+                      {errors.unit && (
+                        <p className="text-sm text-destructive">{errors.unit}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="total" className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        Total
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                          RM
+                        </span>
+                        <Input
+                          id="total"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={total || 0}
+                          readOnly
+                          className="pl-10 bg-muted cursor-not-allowed"
+                        />
+                      </div>
+
+                    </div>
                   </div>
-                  {errors.purchase_price && (
-                    <p className="text-sm text-destructive">{errors.purchase_price}</p>
-                  )}
                 </div>
               </div>
             </CardContent>
@@ -728,38 +847,53 @@ export default function AddAsset() {
               <div className="space-y-2">
                 <Label htmlFor="useful_life" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  Useful Life (Years) <span className="text-xs text-muted-foreground ml-2">(Auto-calculated based on category)</span>
+                  Useful Life (Years)
                 </Label>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Input
-                    id="useful_life"
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={usefulLife}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setUsefulLife(value === "" ? "" : parseInt(value) || "");
-                    }}
-                    onBlur={(e) => {
-                      // When user finishes editing, if value is 0, show infinity symbol
-                      if (e.target.value === "0") {
-                        e.target.value = "∞";
-                      }
-                    }}
-                    onFocus={(e) => {
-                      // When user clicks to edit, if showing infinity, convert back to 0
-                      if (e.target.value === "∞") {
-                        e.target.value = "0";
-                        setUsefulLife(0);
-                      }
-                    }}
-                    className="text-lg font-semibold"
-                  />
-                  <div className="md:col-span-3 flex items-center">
+                  <div className="flex gap-2">
+                    <Input
+                      id="useful_life"
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={usefulLife}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const numericValue = value === "" ? "" : parseInt(value) || "";
+                        setUsefulLife(numericValue);
+                        handleChange("useful_life", typeof numericValue === 'number' ? numericValue : 5);
+                        // Mark that the user has modified the useful life
+                        setHasUserModifiedUsefulLife(true);
+                        // Clear error when user starts typing
+                        if (errors.useful_life) {
+                          setErrors(prev => ({ ...prev, useful_life: "" }));
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // When user finishes editing, if value is 0, show infinity symbol
+                        if (e.target.value === "0") {
+                          e.target.value = "∞";
+                        }
+                      }}
+                      onFocus={(e) => {
+                        // When user clicks to edit, if showing infinity, convert back to 0
+                        if (e.target.value === "∞") {
+                          e.target.value = "0";
+                          setUsefulLife(0);
+                          setHasUserModifiedUsefulLife(true);
+                        }
+                      }}
+                      className="text-lg font-semibold"
+                    />
+
+                  </div>
+                  <div className="md:col-span-3 flex flex-col">
                     <p className="text-sm text-muted-foreground">
-                      Auto-set based on asset category. You can adjust this if needed.
+                      Enter the expected useful life of this asset in years.
                     </p>
+                    {errors.useful_life && (
+                      <p className="text-sm text-destructive mt-1">{errors.useful_life}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -833,7 +967,7 @@ export default function AddAsset() {
                 Additional Details
               </CardTitle>
               <CardDescription>
-                Optional information about the asset
+                Additional information about the asset
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -869,6 +1003,63 @@ export default function AddAsset() {
                   />
                 </div>
               </div>
+              
+              {/* 2-Column Grid: Invoice Number | Supplier Name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {/* Invoice Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="invoice_number" className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4" />
+                    Invoice Number
+                  </Label>
+                  <Input
+                    id="invoice_number"
+                    placeholder="e.g., INV-001"
+                    value={invoiceNumber || ""}
+                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                  />
+                </div>
+
+                {/* Supplier Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="supplier_name" className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Supplier Name
+                  </Label>
+                  <Input
+                    id="supplier_name"
+                    placeholder="e.g., ABC Supplier Sdn Bhd"
+                    value={supplierName || ""}
+                    onChange={(e) => setSupplierName(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              {/* Disposal Price - Only show when status is disposed */}
+              {formData.status === "disposed" && (
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="disposal_price" className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    Disposal Price
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                      RM
+                    </span>
+                    <Input
+                      id="disposal_price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={disposalPrice || ""}
+                      onChange={(e) => setDisposalPrice(parseFloat(e.target.value) || 0)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              )}
+              
             </CardContent>
           </Card>
 

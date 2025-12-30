@@ -55,6 +55,9 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.assetsByCategory": "Assets by Category",
     "dashboard.categoryDistribution": "Distribution of asset value across categories",
     "dashboard.loading": "Loading...",
+    "dashboard.assetDepreciationSchedule": "Asset Depreciation Schedule",
+    "dashboard.depreciationScheduleDescription": "Schedule of asset depreciation over time",
+    "dashboard.noDepreciationData": "No depreciation data available",
     
     // Assets
     "assets.title": "Assets",
@@ -231,6 +234,9 @@ const translations: Record<Language, Record<string, string>> = {
     "dashboard.assetsByCategory": "Aset Mengikut Kategori",
     "dashboard.categoryDistribution": "Pembahagian nilai aset merentas kategori",
     "dashboard.loading": "Memuatkan...",
+    "dashboard.assetDepreciationSchedule": "Jadual Susut Nilai Aset",
+    "dashboard.depreciationScheduleDescription": "Jadual susut nilai aset dari semasa ke semasa",
+    "dashboard.noDepreciationData": "Tiada data susut nilai tersedia",
     
     // Assets
     "assets.title": "Aset",

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Package,
@@ -38,10 +39,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { useAssets, useDeleteAsset } from "@/hooks/useAssets";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useSettings } from "@/contexts/SettingsContext";
+import { cn } from '@/lib/utils';
+import { useAssets, useDeleteAsset } from '@/hooks/useAssets';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useSettings } from '@/contexts/SettingsContext';
 
 
 
@@ -57,10 +58,52 @@ export default function Assets() {
   const [searchParams] = useSearchParams();
   const { t } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Debounced search query to avoid excessive filtering while typing
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
 
-  const { data: assets, isLoading, isError, error } = useAssets();
+  const { data: allAssets, isLoading, isError, error } = useAssets();
+  
+  // Memoize filtered assets to prevent recalculation on every render
+  const filteredAssets = useMemo(() => {
+    if (!allAssets) return [];
+    
+    return allAssets.filter((asset) => {
+      const matchesSearch =
+        debouncedSearchQuery === '' ||
+        asset.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        asset.id.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+      const matchesCategory =
+        !selectedCategory ||
+        selectedCategory === t("assets.allCategories") ||
+        selectedCategory === "All Categories" ||
+        asset.category === selectedCategory;
+      const matchesStatus =
+        !selectedStatus ||
+        selectedStatus === t("assets.allStatus") ||
+        selectedStatus === "All Status" ||
+        asset.status === selectedStatus;
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+  }, [allAssets, debouncedSearchQuery, selectedCategory, selectedStatus, t]);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50; // Show 50 items per page
+  
+  // Calculate pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredAssets.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredAssets.length / itemsPerPage);
+  
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedStatus]);
+  
   const deleteAsset = useDeleteAsset();
 
   // Apply status filter from URL on mount
@@ -88,23 +131,6 @@ export default function Assets() {
     "inactive",
     "disposed"
   ];
-
-  const filteredAssets = (assets || []).filter((asset) => {
-    const matchesSearch =
-      asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      !selectedCategory ||
-      selectedCategory === t("assets.allCategories") ||
-      selectedCategory === "All Categories" ||
-      asset.category === selectedCategory;
-    const matchesStatus =
-      !selectedStatus ||
-      selectedStatus === t("assets.allStatus") ||
-      selectedStatus === "All Status" ||
-      asset.status === selectedStatus;
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this asset?')) {
@@ -214,10 +240,10 @@ export default function Assets() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAssets.map((asset, index) => (
+              {currentItems.map((asset, index) => (
                 <TableRow
                   key={asset.id}
-                  className="border-border hover:bg-secondary/30 cursor-pointer animate-fade-in"
+                  className={`border-border hover:bg-secondary/30 cursor-pointer animate-fade-in ${asset.status === 'disposed' ? 'line-through text-muted-foreground' : ''}`}
                   style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <TableCell className="font-mono text-sm text-primary">
@@ -290,12 +316,23 @@ export default function Assets() {
         {/* Pagination Info */}
         {!isLoading && !isError && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>{t("assets.showing")} {filteredAssets.length} {t("assets.of")} {assets?.length || 0} {t("assets.assetsLabel")}</span>
+          <span>{t("assets.showing")} {Math.min(indexOfLastItem, filteredAssets.length)} {t("assets.of")} {filteredAssets.length} {t("assets.assetsLabel")}</span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
               {t("assets.previous")}
             </Button>
-            <Button variant="outline" size="sm" disabled>
+            <span className="px-2">{currentPage} of {totalPages}</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
               {t("assets.next")}
             </Button>
           </div>

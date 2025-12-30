@@ -10,6 +10,8 @@ export const useAssets = () => {
   });
 };
 
+
+
 export const useAsset = (id: string) => {
   return useQuery({
     queryKey: ['asset', id],

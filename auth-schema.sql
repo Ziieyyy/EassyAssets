@@ -64,14 +64,18 @@ CREATE TRIGGER on_auth_user_created
 -- Update assets table to link to companies
 ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE;
 
+-- Update assets table to add useful_life column
+ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS useful_life INTEGER;
+
 -- Update maintenance_tasks table to link to companies
 ALTER TABLE public.maintenance_tasks ADD COLUMN IF NOT EXISTS company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE;
 
 -- Update assets RLS policies to filter by company
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.assets;
-DROP POLICY IF EXISTS "Enable insert access for all users" ON public.assets;
-DROP POLICY IF EXISTS "Enable update access for all users" ON public.assets;
-DROP POLICY IF EXISTS "Enable delete access for all users" ON public.assets;
+-- Drop old policies that used user_id
+DROP POLICY IF EXISTS "Users can view their own assets" ON public.assets;
+DROP POLICY IF EXISTS "Users can insert their own assets" ON public.assets;
+DROP POLICY IF EXISTS "Users can update their own assets" ON public.assets;
+DROP POLICY IF EXISTS "Users can delete their own assets" ON public.assets;
 
 CREATE POLICY "Users can view assets in their company" ON public.assets
     FOR SELECT USING (
@@ -102,10 +106,11 @@ CREATE POLICY "Users can delete assets in their company" ON public.assets
     );
 
 -- Update maintenance_tasks RLS policies to filter by company
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.maintenance_tasks;
-DROP POLICY IF EXISTS "Enable insert access for all users" ON public.maintenance_tasks;
-DROP POLICY IF EXISTS "Enable update access for all users" ON public.maintenance_tasks;
-DROP POLICY IF EXISTS "Enable delete access for all users" ON public.maintenance_tasks;
+-- Drop old policies that used user_id
+DROP POLICY IF EXISTS "Users can view their own maintenance tasks" ON public.maintenance_tasks;
+DROP POLICY IF EXISTS "Users can insert their own maintenance tasks" ON public.maintenance_tasks;
+DROP POLICY IF EXISTS "Users can update their own maintenance tasks" ON public.maintenance_tasks;
+DROP POLICY IF EXISTS "Users can delete their own maintenance tasks" ON public.maintenance_tasks;
 
 CREATE POLICY "Users can view maintenance tasks in their company" ON public.maintenance_tasks
     FOR SELECT USING (

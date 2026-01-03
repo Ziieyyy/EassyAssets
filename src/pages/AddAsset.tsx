@@ -215,6 +215,17 @@ export default function AddAsset() {
     }
   };
   
+  // Handle changes for invoice number and supplier name
+  const handleInvoiceNumberChange = (value: string) => {
+    setInvoiceNumber(value);
+    setFormData(prev => ({ ...prev, invoice_number: value }));
+  };
+  
+  const handleSupplierNameChange = (value: string) => {
+    setSupplierName(value);
+    setFormData(prev => ({ ...prev, supplier_name: value }));
+  };
+  
   // Calculate total when unit or unit price changes
   useEffect(() => {
     const calculatedTotal = unit * (formData.purchase_price || 0);
@@ -314,6 +325,8 @@ export default function AddAsset() {
         ...formData,
         current_value: currentAssetValue,
         useful_life: typeof usefulLife === 'number' ? usefulLife : 5, // Ensure useful_life is included in the database
+        invoice_number: formData.invoice_number,
+        supplier_name: formData.supplier_name,
       };
       
       await createAsset.mutateAsync(assetData as AssetInsert);
@@ -1016,7 +1029,7 @@ export default function AddAsset() {
                     id="invoice_number"
                     placeholder="e.g., INV-001"
                     value={invoiceNumber || ""}
-                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                    onChange={(e) => handleInvoiceNumberChange(e.target.value)}
                   />
                 </div>
 
@@ -1030,7 +1043,7 @@ export default function AddAsset() {
                     id="supplier_name"
                     placeholder="e.g., ABC Supplier Sdn Bhd"
                     value={supplierName || ""}
-                    onChange={(e) => setSupplierName(e.target.value)}
+                    onChange={(e) => handleSupplierNameChange(e.target.value)}
                   />
                 </div>
               </div>

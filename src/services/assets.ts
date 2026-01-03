@@ -31,7 +31,7 @@ export const assetsService = {
     // Add search filtering if query is provided
     if (searchQuery) {
       query = query.or(
-        `name.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`
+         `name.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`
       );
     }
     

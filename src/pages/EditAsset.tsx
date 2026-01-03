@@ -231,6 +231,8 @@ export default function EditAsset() {
         description: asset.description,
         serial_number: asset.serial_number,
         image_url: asset.image_url,
+        invoice_number: asset.invoice_number,
+        supplier_name: asset.supplier_name,
       });
 
       // Set image preview if image exists
@@ -257,9 +259,9 @@ export default function EditAsset() {
       );
       setUsefulLife(calculatedUsefulLife);
       
-      // Initialize new fields that are not in the database
-      setInvoiceNumber(""); // Default to empty
-      setSupplierName(""); // Default to empty
+      // Initialize new fields that are now in the database
+      setInvoiceNumber(asset.invoice_number || ""); // Get from asset data
+      setSupplierName(asset.supplier_name || ""); // Get from asset data
       setUnit(1); // Default to 1
       setTotal(asset.purchase_price || 0); // Default to purchase price
     }
@@ -271,6 +273,17 @@ export default function EditAsset() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
+  };
+  
+  // Handle changes for invoice number and supplier name
+  const handleInvoiceNumberChange = (value: string) => {
+    setInvoiceNumber(value);
+    setFormData(prev => ({ ...prev, invoice_number: value }));
+  };
+  
+  const handleSupplierNameChange = (value: string) => {
+    setSupplierName(value);
+    setFormData(prev => ({ ...prev, supplier_name: value }));
   };
   
   // Calculate total when unit or unit price changes
@@ -350,6 +363,9 @@ export default function EditAsset() {
           ...updateData,
           // Don't save useful_life to database - keep in UI only
           // Pass usefulLife via state when navigating
+          // Include the new fields in the update
+          invoice_number: formData.invoice_number,
+          supplier_name: formData.supplier_name,
         }
       });
       navigate("/assets");
@@ -1117,7 +1133,7 @@ export default function EditAsset() {
                     id="invoice_number"
                     placeholder="e.g., INV-001"
                     value={invoiceNumber || ""}
-                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                    onChange={(e) => handleInvoiceNumberChange(e.target.value)}
                   />
                 </div>
 
@@ -1131,7 +1147,7 @@ export default function EditAsset() {
                     id="supplier_name"
                     placeholder="e.g., ABC Supplier Sdn Bhd"
                     value={supplierName || ""}
-                    onChange={(e) => setSupplierName(e.target.value)}
+                    onChange={(e) => handleSupplierNameChange(e.target.value)}
                   />
                 </div>
               </div>

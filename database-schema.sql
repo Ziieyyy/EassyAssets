@@ -11,10 +11,13 @@ CREATE TABLE IF NOT EXISTS public.assets (
     purchase_price NUMERIC(10, 2) NOT NULL,
     current_value NUMERIC(10, 2) NOT NULL,
     assigned_to TEXT NOT NULL,
+    assigned_invoice TEXT,
     description TEXT,
     serial_number TEXT,
     image_url TEXT,
-    useful_life INTEGER
+    useful_life INTEGER,
+    invoice_number TEXT,
+    supplier_name TEXT
 );
 
 -- Create maintenance_tasks table

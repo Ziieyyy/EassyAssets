@@ -74,6 +74,8 @@ export interface Database {
           image_url: string | null
           company_id: string | null
           useful_life: number
+          invoice_number: string | null
+          supplier_name: string | null
         }
         Insert: {
           id?: string
@@ -93,6 +95,8 @@ export interface Database {
           image_url?: string | null
           company_id?: string | null
           useful_life?: number
+          invoice_number?: string | null
+          supplier_name?: string | null
         }
         Update: {
           id?: string
@@ -112,6 +116,8 @@ export interface Database {
           image_url?: string | null
           company_id?: string | null
           useful_life?: number
+          invoice_number?: string | null
+          supplier_name?: string | null
         }
       }
       maintenance_tasks: {

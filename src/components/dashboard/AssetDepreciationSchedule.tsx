@@ -275,24 +275,24 @@ export function AssetDepreciationSchedule() {
           <thead>
             <tr className="border-b border-border">
               <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={3}>Jenis Aset</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={3}>Kos</th>
+              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={3}>Kos (RM)</th>
               <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border">Kadar Susut</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={4}>Susut Nilai</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm">Nilai Buku Bersih</th>
+              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={4}>Susut Nilai (RM)</th>
+              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm">Nilai Buku Bersih (RM)</th>
             </tr>
             <tr className="border-b border-border">
               <th className="py-3 px-2 text-foreground text-center">Bil</th>
               <th className="py-3 px-2 text-foreground text-center">Tarikh</th>
               <th className="py-3 px-2 text-foreground text-center border-r border-border">Asset Detail</th>
-              <th className="py-3 px-2 text-foreground text-center">Kos Aset</th>
-              <th className="py-3 px-2 text-foreground text-center">Lupus</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">Baki Akhir</th>
+              <th className="py-3 px-2 text-foreground text-center">Kos Aset (RM)</th>
+              <th className="py-3 px-2 text-foreground text-center">Lupus (RM)</th>
+              <th className="py-3 px-2 text-foreground text-center border-r border-border">Baki Akhir (RM)</th>
               <th className="py-3 px-2 text-foreground text-center border-r border-border">% Susut</th>
-              <th className="py-3 px-2 text-foreground text-center">Baki Awal</th>
-              <th className="py-3 px-2 text-foreground text-center">Tambahan</th>
-              <th className="py-3 px-2 text-foreground text-center">Lupus</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">Baki Akhir</th>
-              <th className="py-3 px-2 text-foreground text-center">nilai buku bersih</th>
+              <th className="py-3 px-2 text-foreground text-center">Baki Awal (RM)</th>
+              <th className="py-3 px-2 text-foreground text-center">Tambahan (RM)</th>
+              <th className="py-3 px-2 text-foreground text-center">Lupus (RM)</th>
+              <th className="py-3 px-2 text-foreground text-center border-r border-border">Baki Akhir (RM)</th>
+              <th className="py-3 px-2 text-foreground text-center">nilai buku bersih (RM)</th>
             </tr>
           </thead>
           <tbody>
@@ -301,15 +301,15 @@ export function AssetDepreciationSchedule() {
                 <td className="py-3 px-2 text-foreground text-center">{record.no}</td>
                 <td className="py-3 px-2 text-foreground text-center">{record.date}</td>
                 <td className="py-3 px-2 text-foreground text-center border-r border-border">{record.assetDetail}</td>
-                <td className="py-3 px-2 text-foreground text-center">RM {record.costFinalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-3 px-2 text-foreground text-center">RM {record.disposal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-3 px-2 text-foreground text-center border-r border-border">RM {record.remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center">{record.costFinalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center">{record.disposal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center border-r border-border">{record.remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="py-3 px-2 text-foreground text-center border-r border-border">{record.depreciationRate.toFixed(2)}%</td>
-                <td className="py-3 px-2 text-foreground text-center">RM {record.openingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-3 px-2 text-foreground text-center">RM {record.monthlyDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-3 px-2 text-foreground text-center">RM {record.disposalDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-3 px-2 text-foreground text-center border-r border-border">RM {record.closingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-3 px-2 text-foreground text-center font-medium">RM {record.netBookValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center">{record.openingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center">{record.monthlyDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center">{record.disposalDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center border-r border-border">{record.closingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center font-medium">{record.netBookValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
             
@@ -317,15 +317,15 @@ export function AssetDepreciationSchedule() {
               <td className="py-3 px-2 text-center">Jumlah</td>
               <td className="py-3 px-2"></td>
               <td className="py-3 px-2 border-r border-border"></td>
-              <td className="py-3 px-2 text-center">RM {depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.costFinalBalance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td className="py-3 px-2 text-center">RM {depreciationSchedule.reduce((sum, record) => sum + record.disposal, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td className="py-3 px-2 text-center border-r border-border">RM {depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.remainingCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 text-center">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.costFinalBalance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 text-center">{depreciationSchedule.reduce((sum, record) => sum + record.disposal, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 text-center border-r border-border">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.remainingCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               <td className="py-3 px-2 border-r border-border"></td>
-              <td className="py-3 px-2 text-center">RM {depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.openingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td className="py-3 px-2 text-center">RM {depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.monthlyDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td className="py-3 px-2 text-center">RM {depreciationSchedule.reduce((sum, record) => sum + record.disposalDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td className="py-3 px-2 text-center border-r border-border">RM {depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.closingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td className="py-3 px-2 text-center font-medium">RM {depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.netBookValue, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 text-center">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.openingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 text-center">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.monthlyDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 text-center">{depreciationSchedule.reduce((sum, record) => sum + record.disposalDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 text-center border-r border-border">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.closingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 text-center font-medium">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.netBookValue, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
           </tbody>
         </table>

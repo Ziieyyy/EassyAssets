@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS public.assets (
     image_url TEXT,
     useful_life INTEGER,
     invoice_number TEXT,
-    supplier_name TEXT
+    supplier_name TEXT,
+    status_notes TEXT,
+    status_date DATE
 );
 
 -- Create maintenance_tasks table

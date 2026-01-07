@@ -72,9 +72,23 @@ export const assetsService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
     
+    // Get user's profile to retrieve company_id
+    const { data: profileData, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+    
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      throw new Error('Could not retrieve user profile information');
+    }
+    
+    const company_id = profileData?.company_id || null;
+    
     const { data, error } = await supabase
       .from('assets')
-      .insert({ ...asset, user_id: user.id, company_id: null } as any)
+      .insert({ ...asset, user_id: user.id, company_id } as AssetInsert & { user_id: string; company_id: string | null })
       .select()
       .single();
 

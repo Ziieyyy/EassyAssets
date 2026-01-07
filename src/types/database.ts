@@ -76,6 +76,8 @@ export interface Database {
           useful_life: number
           invoice_number: string | null
           supplier_name: string | null
+          status_notes: string | null
+          status_date: string | null
         }
         Insert: {
           id?: string
@@ -97,6 +99,8 @@ export interface Database {
           useful_life?: number
           invoice_number?: string | null
           supplier_name?: string | null
+          status_notes?: string | null
+          status_date?: string | null
         }
         Update: {
           id?: string
@@ -118,6 +122,8 @@ export interface Database {
           useful_life?: number
           invoice_number?: string | null
           supplier_name?: string | null
+          status_notes?: string | null
+          status_date?: string | null
         }
       }
       maintenance_tasks: {

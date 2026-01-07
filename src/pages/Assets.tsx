@@ -233,9 +233,14 @@ export default function Assets() {
                 <TableHead className="text-muted-foreground">{t("assets.location")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("assets.status")}</TableHead>
                 <TableHead className="text-muted-foreground text-right">
+                  Cost
+                </TableHead>
+                <TableHead className="text-muted-foreground text-right">
                   {t("assets.currentValue")}
                 </TableHead>
                 <TableHead className="text-muted-foreground">{t("assets.assignedTo")}</TableHead>
+                <TableHead className="text-muted-foreground">Status Notes</TableHead>
+                <TableHead className="text-muted-foreground">Status Date</TableHead>
                 <TableHead className="text-muted-foreground w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -272,10 +277,19 @@ export default function Assets() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium text-foreground">
+                    RM {(asset.purchase_price || 0).toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right font-medium text-foreground">
                     RM {(asset.current_value || 0).toLocaleString()}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {asset.assigned_to || 'Unassigned'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {asset.status_notes || '-'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {asset.status_date ? new Date(asset.status_date).toLocaleDateString() : '-'}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

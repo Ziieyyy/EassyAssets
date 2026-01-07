@@ -76,6 +76,10 @@ export default function AddAsset() {
   const [supplierName, setSupplierName] = useState<string>("");
   const [unit, setUnit] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
+  
+  // Additional fields for maintenance, inactive, and disposed status
+  const [statusNotes, setStatusNotes] = useState<string>("");
+  const [statusDate, setStatusDate] = useState<string>("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -215,6 +219,17 @@ export default function AddAsset() {
     }
   };
   
+  // Handle changes for status-specific fields
+  const handleStatusNotesChange = (value: string) => {
+    setStatusNotes(value);
+    setFormData(prev => ({ ...prev, status_notes: value }));
+  };
+  
+  const handleStatusDateChange = (value: string) => {
+    setStatusDate(value);
+    setFormData(prev => ({ ...prev, status_date: value }));
+  };
+  
   // Handle changes for invoice number and supplier name
   const handleInvoiceNumberChange = (value: string) => {
     setInvoiceNumber(value);
@@ -327,6 +342,9 @@ export default function AddAsset() {
         useful_life: typeof usefulLife === 'number' ? usefulLife : 5, // Ensure useful_life is included in the database
         invoice_number: formData.invoice_number,
         supplier_name: formData.supplier_name,
+        // Add status-specific fields
+        status_notes: statusNotes,
+        status_date: statusDate,
       };
       
       await createAsset.mutateAsync(assetData as AssetInsert);
@@ -669,6 +687,39 @@ export default function AddAsset() {
                   ))}
                 </div>
               </div>
+              
+              {/* Status Notes and Date - Show when status is maintenance, inactive, or disposed */}
+              {(formData.status === "maintenance" || formData.status === "inactive" || formData.status === "disposed") && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status_notes" className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Status Notes
+                    </Label>
+                    <Textarea
+                      id="status_notes"
+                      placeholder="Enter notes about the status..."
+                      value={statusNotes}
+                      onChange={(e) => handleStatusNotesChange(e.target.value)}
+                      rows={3}
+                      className="resize-none"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="status_date" className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Status Date
+                    </Label>
+                    <Input
+                      id="status_date"
+                      type="date"
+                      value={statusDate}
+                      onChange={(e) => handleStatusDateChange(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Location and Assigned To - 2 Column Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -757,12 +808,22 @@ export default function AddAsset() {
                         </span>
                         <Input
                           id="purchase_price"
-                          type="number"
-                          step="0.01"
-                          min="0"
+                          type="text"
+                          inputMode="decimal"
                           placeholder="0.00"
-                          value={formData.purchase_price || ""}
-                          onChange={(e) => handleChange("purchase_price", parseFloat(e.target.value) || 0)}
+                          value={formData.purchase_price ? formData.purchase_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ""}
+                          onChange={(e) => {
+                            // Allow only numbers, decimal point, and comma
+                            let value = e.target.value;
+                            // Remove commas and non-numeric characters except decimal point
+                            value = value.replace(/,/g, '').replace(/[^\d.]/g, '');
+                            // Ensure only one decimal point
+                            const parts = value.split('.');
+                            if (parts.length > 2) {
+                              value = parts[0] + '.' + parts.slice(1).join('');
+                            }
+                            handleChange("purchase_price", parseFloat(value) || 0);
+                          }}
                           className={cn(
                             "pl-10",
                             errors.purchase_price ? "border-destructive" : ""
@@ -780,12 +841,17 @@ export default function AddAsset() {
                       </Label>
                       <Input
                         id="unit"
-                        type="number"
-                        min="0"
-                        step="1"
+                        type="text"
+                        inputMode="numeric"
                         placeholder="1"
-                        value={unit || ""}
-                        onChange={(e) => handleUnitChange(parseInt(e.target.value) || 0)}
+                        value={unit ? unit.toLocaleString('en-US') : ""}
+                        onChange={(e) => {
+                          // Allow only numbers
+                          let value = e.target.value;
+                          // Remove non-numeric characters
+                          value = value.replace(/[^\d]/g, '');
+                          handleUnitChange(parseInt(value) || 0);
+                        }}
                         className={errors.unit ? "border-destructive" : ""}
                       />
                       {errors.unit && (
@@ -803,11 +869,10 @@ export default function AddAsset() {
                         </span>
                         <Input
                           id="total"
-                          type="number"
-                          step="0.01"
-                          min="0"
+                          type="text"
+                          inputMode="decimal"
                           placeholder="0.00"
-                          value={total || 0}
+                          value={total ? total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
                           readOnly
                           className="pl-10 bg-muted cursor-not-allowed"
                         />

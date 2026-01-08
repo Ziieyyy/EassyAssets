@@ -50,7 +50,7 @@ export function RecentAssets() {
               <div>
                 <p className="font-medium text-foreground group-hover:text-primary transition-colors duration-300">{asset.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {asset.id} • {asset.category}
+                  {asset.id} • {asset.category || "Uncategorized"}
                 </p>
               </div>
             </div>

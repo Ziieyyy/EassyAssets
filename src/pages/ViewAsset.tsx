@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Package, Calendar, DollarSign, MapPin, User, FileText, Hash, Loader2, Image as ImageIcon, Receipt, X, ZoomIn } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -21,6 +21,14 @@ export default function ViewAsset() {
   const navigate = useNavigate();
   const { data: asset, isLoading, isError, error } = useAsset(id || "");
   const [isInvoiceZoomed, setIsInvoiceZoomed] = useState(false);
+  const [categoryName, setCategoryName] = useState(asset?.category || "");
+  
+  // Update category name when asset is loaded
+  useEffect(() => {
+    if (asset) {
+      setCategoryName(asset.category);
+    }
+  }, [asset]);
 
   if (isLoading) {
     return (
@@ -129,7 +137,7 @@ export default function ViewAsset() {
                       <Hash className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <div className="flex-1">
                         <p className="text-sm text-muted-foreground">Category</p>
-                        <p className="text-foreground font-medium">{asset.category}</p>
+                        <p className="text-foreground font-medium">{categoryName || "Uncategorized"}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">

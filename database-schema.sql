@@ -1,10 +1,40 @@
+-- Create categories table
+CREATE TABLE IF NOT EXISTS public.categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Add unique constraint for user-specific category names
+ALTER TABLE public.categories ADD CONSTRAINT unique_user_category_name UNIQUE (user_id, LOWER(name));
+
+-- Enable Row Level Security (RLS) for categories table
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for categories table (user-specific access)
+CREATE POLICY "Users can view their own categories" ON public.categories
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own categories" ON public.categories
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own categories" ON public.categories
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own categories" ON public.categories
+    FOR DELETE USING (auth.uid() = user_id);
+
 -- Create assets table
 CREATE TABLE IF NOT EXISTS public.assets (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     name TEXT NOT NULL,
-    category TEXT NOT NULL,
+    category TEXT, -- Keep for backward compatibility
+    category_id UUID REFERENCES public.categories(id), -- New foreign key
     location TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'maintenance', 'inactive', 'disposed')),
     purchase_date DATE NOT NULL,
@@ -67,8 +97,13 @@ CREATE POLICY "Users can delete their own maintenance tasks" ON public.maintenan
     FOR DELETE USING (auth.uid() = user_id);
 
 -- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS categories_user_id_idx ON public.categories(user_id);
+CREATE INDEX IF NOT EXISTS categories_name_idx ON public.categories(name);
+CREATE INDEX IF NOT EXISTS categories_is_active_idx ON public.categories(is_active);
+
 CREATE INDEX IF NOT EXISTS assets_user_id_idx ON public.assets(user_id);
 CREATE INDEX IF NOT EXISTS assets_category_idx ON public.assets(category);
+CREATE INDEX IF NOT EXISTS assets_category_id_idx ON public.assets(category_id);
 CREATE INDEX IF NOT EXISTS assets_status_idx ON public.assets(status);
 CREATE INDEX IF NOT EXISTS assets_assigned_to_idx ON public.assets(assigned_to);
 CREATE INDEX IF NOT EXISTS maintenance_tasks_user_id_idx ON public.maintenance_tasks(user_id);

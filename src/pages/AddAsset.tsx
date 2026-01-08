@@ -13,27 +13,10 @@ import { cn } from "@/lib/utils";
 import { useCreateAsset } from "@/hooks/useAssets";
 import type { AssetInsert } from "@/types/database";
 import { toast } from "sonner";
+import CategoryDropdown from "@/components/ui/CategoryDropdown";
 
 
-const categories = ["IT Equipment", "Furniture", "Vehicles", "Office Equipment", "Machinery", "Other"];
-
-// Auto-calculate useful life based on category
-const getCategoryUsefulLife = (category: string): number => {
-  switch (category) {
-    case "IT Equipment":
-      return 3; // Computers, laptops, servers
-    case "Furniture":
-      return 7; // Desks, chairs, cabinets
-    case "Vehicles":
-      return 5; // Cars, trucks, vans
-    case "Office Equipment":
-      return 5; // Printers, scanners, phones
-    case "Machinery":
-      return 10; // Heavy equipment, tools
-    default:
-      return 5; // Default for "Other"
-  }
-};
+const hardcodedCategories = ["IT Equipment", "Furniture", "Vehicles", "Office Equipment", "Machinery", "Other"];
 
 const statuses = [
   { value: "active", label: "Active", color: "bg-green-500 hover:bg-green-600" },
@@ -56,7 +39,7 @@ export default function AddAsset() {
   const [formData, setFormData] = useState<Partial<AssetInsert>>({
     id: "",
     name: "",
-    category: "IT Equipment",
+    category_id: null,
     location: "",
     status: "active",
     purchase_date: new Date().toISOString().split('T')[0],
@@ -88,6 +71,7 @@ export default function AddAsset() {
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [showOtherCategory, setShowOtherCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [depreciationMethod, setDepreciationMethod] = useState<string>("straight-line");
   const [usefulLife, setUsefulLife] = useState<number | "">(""); // Start with empty value
   const [hasUserModifiedUsefulLife, setHasUserModifiedUsefulLife] = useState<boolean>(false);
@@ -291,8 +275,8 @@ export default function AddAsset() {
     if (!formData.name?.trim()) {
       newErrors.name = "Asset detail is required";
     }
-    if (!formData.category) {
-      newErrors.category = "Category is required";
+    if (!formData.category_id) {
+      newErrors.category_id = "Category is required";
     }
     if (!formData.location?.trim()) {
       newErrors.location = "Location is required";
@@ -311,6 +295,16 @@ export default function AddAsset() {
     }
     if (typeof usefulLife !== 'number' || usefulLife <= 0) {
       newErrors.useful_life = "Useful life must be greater than 0";
+    }
+    
+    // Validate status-specific fields
+    if (formData.status === "maintenance" || formData.status === "inactive" || formData.status === "disposed") {
+      if (!statusNotes.trim()) {
+        newErrors.status_notes = "Status notes are required when asset is maintenance, inactive, or disposed";
+      }
+      if (!statusDate) {
+        newErrors.status_date = "Status date is required when asset is maintenance, inactive, or disposed";
+      }
     }
 
     setErrors(newErrors);
@@ -343,8 +337,8 @@ export default function AddAsset() {
         invoice_number: formData.invoice_number,
         supplier_name: formData.supplier_name,
         // Add status-specific fields
-        status_notes: statusNotes,
-        status_date: statusDate,
+        status_notes: statusNotes || null,
+        status_date: statusDate || null,
       };
       
       await createAsset.mutateAsync(assetData as AssetInsert);
@@ -632,35 +626,20 @@ export default function AddAsset() {
 
               {/* Category Buttons */}
               <div className="space-y-2">
-                <Label htmlFor="category">
+                <Label htmlFor="category_id">
                   Category <span className="text-destructive">*</span>
                 </Label>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => (
-                    <Button
-                      key={cat}
-                      type="button"
-                      variant={(formData.category === cat || (cat === "Other" && showOtherCategory)) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleCategoryChange(cat)}
-                      className="rounded-full"
-                    >
-                      {cat}
-                    </Button>
-                  ))}
-                </div>
-                {showOtherCategory && (
-                  <Input
-                    id="custom_category"
-                    placeholder="Enter custom category..."
-                    value={customCategory}
-                    onChange={(e) => handleCustomCategoryChange(e.target.value)}
-                    className={cn("mt-2", errors.category ? "border-destructive" : "")}
-                    autoFocus
-                  />
-                )}
-                {errors.category && (
-                  <p className="text-sm text-destructive">{errors.category}</p>
+                <CategoryDropdown
+                  id="category_id"
+                  value={formData.category_id || null}
+                  onChange={(value) => setFormData({...formData, category_id: value})}
+                  placeholder="Select Category"
+                  className="bg-gray-800 border-gray-700"
+                  required={true}
+                  showAddButton={true}
+                />
+                {errors.category_id && (
+                  <p className="text-sm text-destructive">{errors.category_id}</p>
                 )}
               </div>
 
@@ -702,8 +681,11 @@ export default function AddAsset() {
                       value={statusNotes}
                       onChange={(e) => handleStatusNotesChange(e.target.value)}
                       rows={3}
-                      className="resize-none"
+                      className={cn("resize-none", errors.status_notes ? "border-destructive" : "")}
                     />
+                    {errors.status_notes && (
+                      <p className="text-sm text-destructive">{errors.status_notes}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -716,7 +698,11 @@ export default function AddAsset() {
                       type="date"
                       value={statusDate}
                       onChange={(e) => handleStatusDateChange(e.target.value)}
+                      className={errors.status_date ? "border-destructive" : ""}
                     />
+                    {errors.status_date && (
+                      <p className="text-sm text-destructive">{errors.status_date}</p>
+                    )}
                   </div>
                 </div>
               )}

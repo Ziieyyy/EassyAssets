@@ -29,8 +29,8 @@ export function AssetDepreciationSchedule() {
   // Get unique categories from assets
   const categories = useMemo(() => {
     if (!assets) return [];
-    const uniqueCategories = Array.from(new Set(assets.map(asset => asset.category)));
-    return uniqueCategories;
+    const uniqueCategories = Array.from(new Set(assets.map(asset => asset.category || "")));
+    return ["All Categories", ...uniqueCategories.filter(cat => cat !== "")];
   }, [assets]);
 
   // Get unique months from assets
@@ -52,9 +52,9 @@ export function AssetDepreciationSchedule() {
     if (!assets || assets.length === 0) return [];
     
     // Filter assets by selected category if not 'All Categories'
-    let filteredAssets = selectedCategory === 'All Categories' 
+    let filteredAssets = selectedCategory === 'All Categories' || selectedCategory === t("assets.allCategories")
       ? assets 
-      : assets.filter(asset => asset.category === selectedCategory);
+      : assets.filter(asset => (asset.category || "") === selectedCategory);
       
     // Further filter by selected month if not 'All Months'
     if (selectedMonth !== 'All Months') {

@@ -23,26 +23,9 @@ import { cn } from "@/lib/utils";
 import { useAsset, useUpdateAsset, useDeleteAsset } from "@/hooks/useAssets";
 import type { AssetInsert } from "@/types/database";
 import { useSettings } from "@/contexts/SettingsContext";
+import CategoryDropdown from "@/components/ui/CategoryDropdown";
 
-const categories = ["IT Equipment", "Furniture", "Vehicles", "Office Equipment", "Machinery", "Other"];
-
-// Auto-calculate useful life based on category
-const getCategoryUsefulLife = (category: string): number => {
-  switch (category) {
-    case "IT Equipment":
-      return 3; // Computers, laptops, servers
-    case "Furniture":
-      return 7; // Desks, chairs, cabinets
-    case "Vehicles":
-      return 5; // Cars, trucks, vans
-    case "Office Equipment":
-      return 5; // Printers, scanners, phones
-    case "Machinery":
-      return 10; // Heavy equipment, tools
-    default:
-      return 5; // Default for "Other"
-  }
-};
+const hardcodedCategories = ["IT Equipment", "Furniture", "Vehicles", "Office Equipment", "Machinery", "Other"];
 
 const statuses = [
   { value: "active", label: "Active", color: "bg-green-500 hover:bg-green-600" },
@@ -68,7 +51,7 @@ export default function EditAsset() {
   const [formData, setFormData] = useState<Partial<AssetInsert>>({
     id: "",
     name: "",
-    category: "IT Equipment",
+    category_id: null,
     location: "",
     status: "active",
     purchase_date: new Date().toISOString().split('T')[0],
@@ -224,7 +207,7 @@ export default function EditAsset() {
       setFormData({
         id: asset.id,
         name: asset.name,
-        category: asset.category,
+        category_id: asset.category_id,
         location: asset.location,
         status: asset.status,
         purchase_date: asset.purchase_date,
@@ -255,11 +238,7 @@ export default function EditAsset() {
         setInvoicePreview(asset.assigned_invoice);
       }
 
-      // Check if category is "Other"
-      if (!categories.slice(0, -1).includes(asset.category)) {
-        setShowOtherCategory(true);
-        setCustomCategory(asset.category);
-      }
+      // For backward compatibility, no special handling needed for existing categories
 
       // Reverse calculate useful life from existing depreciation data
       const calculatedUsefulLife = reverseCalculateUsefulLife(
@@ -322,16 +301,7 @@ export default function EditAsset() {
   };
 
   const handleCategoryChange = (category: string) => {
-    if (category === "Other") {
-      setShowOtherCategory(true);
-      setFormData(prev => ({ ...prev, category: "" }));
-      // Don't reset useful life when changing to Other
-    } else {
-      setShowOtherCategory(false);
-      setCustomCategory("");
-      handleChange("category", category);
-      // Don't auto-change useful life in edit mode - keep user's value
-    }
+    handleChange("category", category);
   };
 
   const handleCustomCategoryChange = (value: string) => {
@@ -346,8 +316,8 @@ export default function EditAsset() {
     if (!formData.name?.trim()) {
       newErrors.name = "Asset detail is required";
     }
-    if (!formData.category) {
-      newErrors.category = t("editAsset.categoryRequired");
+    if (!formData.category_id) {
+      newErrors.category_id = t("editAsset.categoryRequired");
     }
     if (!formData.location?.trim()) {
       newErrors.location = t("editAsset.locationRequired");
@@ -363,6 +333,16 @@ export default function EditAsset() {
     }
     if (!formData.assigned_to?.trim()) {
       newErrors.assigned_to = t("editAsset.assignedToRequired");
+    }
+    
+    // Validate status-specific fields
+    if (formData.status === "maintenance" || formData.status === "inactive" || formData.status === "disposed") {
+      if (!statusNotes.trim()) {
+        newErrors.status_notes = "Status notes are required when asset is maintenance, inactive, or disposed";
+      }
+      if (!statusDate) {
+        newErrors.status_date = "Status date is required when asset is maintenance, inactive, or disposed";
+      }
     }
 
     setErrors(newErrors);
@@ -388,8 +368,8 @@ export default function EditAsset() {
           invoice_number: formData.invoice_number,
           supplier_name: formData.supplier_name,
           // Add status-specific fields
-          status_notes: formData.status_notes,
-          status_date: formData.status_date,
+          status_notes: formData.status_notes || null,
+          status_date: formData.status_date || null,
         }
       });
       navigate("/assets");
@@ -733,35 +713,20 @@ export default function EditAsset() {
 
               {/* Category Buttons */}
               <div className="space-y-2">
-                <Label htmlFor="category">
+                <Label htmlFor="category_id">
                   {t("editAsset.category")} <span className="text-destructive">{t("editAsset.required")}</span>
                 </Label>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => (
-                    <Button
-                      key={cat}
-                      type="button"
-                      variant={(formData.category === cat || (cat === "Other" && showOtherCategory)) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleCategoryChange(cat)}
-                      className="rounded-full"
-                    >
-                      {getCategoryLabel(cat)}
-                    </Button>
-                  ))}
-                </div>
-                {showOtherCategory && (
-                  <Input
-                    id="custom_category"
-                    placeholder={t("category.customCategory")}
-                    value={customCategory}
-                    onChange={(e) => handleCustomCategoryChange(e.target.value)}
-                    className={cn("mt-2", errors.category ? "border-destructive" : "")}
-                    autoFocus
-                  />
-                )}
-                {errors.category && (
-                  <p className="text-sm text-destructive">{errors.category}</p>
+                <CategoryDropdown
+                  id="category_id"
+                  value={formData.category_id || null}
+                  onChange={(value) => setFormData({...formData, category_id: value})}
+                  placeholder="Select Category"
+                  className="bg-gray-800 border-gray-700"
+                  required={true}
+                  showAddButton={true}
+                />
+                {errors.category_id && (
+                  <p className="text-sm text-destructive">{errors.category_id}</p>
                 )}
               </div>
 
@@ -803,8 +768,11 @@ export default function EditAsset() {
                       value={statusNotes}
                       onChange={(e) => handleStatusNotesChange(e.target.value)}
                       rows={3}
-                      className="resize-none"
+                      className={cn("resize-none", errors.status_notes ? "border-destructive" : "")}
                     />
+                    {errors.status_notes && (
+                      <p className="text-sm text-destructive">{errors.status_notes}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -817,7 +785,11 @@ export default function EditAsset() {
                       type="date"
                       value={statusDate}
                       onChange={(e) => handleStatusDateChange(e.target.value)}
+                      className={errors.status_date ? "border-destructive" : ""}
                     />
+                    {errors.status_date && (
+                      <p className="text-sm text-destructive">{errors.status_date}</p>
+                    )}
                   </div>
                 </div>
               )}

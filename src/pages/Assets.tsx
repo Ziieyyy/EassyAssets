@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils';
 import { useAssets, useDeleteAsset } from '@/hooks/useAssets';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSettings } from '@/contexts/SettingsContext';
+import { supabase } from '@/lib/supabase';
 
 
 
@@ -114,15 +115,35 @@ export default function Assets() {
     }
   }, [searchParams]);
 
-  const categories = [
-    t("assets.allCategories"),
-    "IT Equipment",
-    "Furniture",
-    "Vehicles",
-    "Office Equipment",
-    "Machinery",
-    "Other"
-  ];
+  const [dynamicCategories, setDynamicCategories] = useState<string[]>([]);
+  
+  // Load dynamic categories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const { data, error } = await supabase
+          .from('categories')
+          .select('name')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+        
+        const categoryNames = data?.map((cat: any) => cat.name) || [];
+        setDynamicCategories([t("assets.allCategories"), ...categoryNames]);
+      } catch (err) {
+        console.error('Error loading categories:', err);
+        // Fallback to empty array with just the 'All Categories' option
+        setDynamicCategories([t("assets.allCategories")]);
+      }
+    };
+    
+    loadCategories();
+  }, [t]);
   
   const statuses = [
     t("assets.allStatus"),
@@ -194,7 +215,7 @@ export default function Assets() {
                 <SelectValue placeholder={t("assets.category")} className="text-foreground" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((category) => (
+                {dynamicCategories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>

@@ -18,6 +18,7 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import AssetDepreciationSchedulePage from "./pages/AssetDepreciationSchedulePage";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/depreciation-schedule"
+                element={
+                  <ProtectedRoute>
+                    <AssetDepreciationSchedulePage />
                   </ProtectedRoute>
                 }
               />

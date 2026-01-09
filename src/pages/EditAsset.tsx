@@ -325,8 +325,14 @@ export default function EditAsset() {
     if (!formData.purchase_date) {
       newErrors.purchase_date = t("editAsset.purchaseDateRequired");
     }
-    if (!formData.purchase_price || formData.purchase_price <= 0) {
-      newErrors.purchase_price = "Unit price must be greater than 0";
+    if (formData.purchase_price) {
+      // Check if the value is numeric and if so, validate it's greater than 0
+      const numericValue = parseFloat(formData.purchase_price.toString());
+      if (!isNaN(numericValue) && numericValue <= 0) {
+        newErrors.purchase_price = "Numeric unit price must be greater than 0";
+      }
+    } else {
+      newErrors.purchase_price = "Unit price is required";
     }
     if (unit < 0) {
       newErrors.unit = "Unit must be a valid number";

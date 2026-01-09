@@ -230,8 +230,8 @@ export default function ViewAsset() {
                   <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Purchase Price</p>
-                    <p className="text-foreground font-medium text-lg">
-                      RM {(asset.purchase_price || 0).toLocaleString()}
+                    <p className="text-foreground font-medium text-lg text-center">
+                      {(asset.purchase_price || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
@@ -239,16 +239,16 @@ export default function ViewAsset() {
                   <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Current Value</p>
-                    <p className="text-foreground font-medium text-lg">
-                      RM {(asset.current_value || 0).toLocaleString()}
+                    <p className="text-foreground font-medium text-lg text-center">
+                      {(asset.current_value || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
                 <div className="md:col-span-3 pt-3 border-t border-border">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">Depreciation</p>
-                    <p className="text-destructive font-medium">
-                      - RM {((asset.purchase_price || 0) - (asset.current_value || 0)).toLocaleString()}
+                    <p className="text-destructive font-medium text-center">
+                      - {((asset.purchase_price || 0) - (asset.current_value || 0)).toLocaleString('en-MY', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
@@ -336,8 +336,8 @@ export default function ViewAsset() {
                     <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div className="flex-1">
                       <p className="text-sm text-muted-foreground">Purchase Price</p>
-                      <p className="text-foreground font-medium text-lg">
-                        RM {(asset.purchase_price || 0).toLocaleString()}
+                      <p className="text-foreground font-medium text-lg text-center">
+                        {(asset.purchase_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>
@@ -345,16 +345,16 @@ export default function ViewAsset() {
                     <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div className="flex-1">
                       <p className="text-sm text-muted-foreground">Current Value</p>
-                      <p className="text-foreground font-medium text-lg">
-                        RM {(asset.current_value || 0).toLocaleString()}
+                      <p className="text-foreground font-medium text-lg text-center">
+                        {(asset.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>
                   <div className="md:col-span-3 pt-3 border-t border-border">
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-muted-foreground">Depreciation</p>
-                      <p className="text-destructive font-medium">
-                        - RM {((asset.purchase_price || 0) - (asset.current_value || 0)).toLocaleString()}
+                      <p className="text-destructive font-medium text-center">
+                        - {((asset.purchase_price || 0) - (asset.current_value || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>

@@ -8,6 +8,7 @@ import {
   ChevronRight,
   LogOut,
   User,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ export function Sidebar() {
   const navigation = [
     { name: t("nav.dashboard"), href: "/", icon: LayoutDashboard },
     { name: t("nav.assets"), href: "/assets", icon: Package },
+    { name: t("nav.depreciationSchedule"), href: "/depreciation-schedule", icon: Calendar },
   ];
 
   const bottomNavigation = [

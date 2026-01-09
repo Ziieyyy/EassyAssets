@@ -4,7 +4,6 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { AssetValueChart } from "@/components/dashboard/AssetValueChart";
 import { AssetCategoryChart } from "@/components/dashboard/AssetCategoryChart";
 import { RecentAssets } from "@/components/dashboard/RecentAssets";
-import { AssetDepreciationSchedule } from "@/components/dashboard/AssetDepreciationSchedule";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAssetStats, useAssets } from "@/hooks/useAssets";
@@ -146,11 +145,6 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AssetValueChart />
         <AssetCategoryChart />
-      </div>
-
-      {/* Depreciation Schedule */}
-      <div className="grid grid-cols-1 gap-6">
-        <AssetDepreciationSchedule />
       </div>
 
       {/* Recent Assets */}

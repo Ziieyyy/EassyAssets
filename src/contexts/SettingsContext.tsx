@@ -33,6 +33,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.assets": "Assets",
     "nav.settings": "Settings",
     "nav.logout": "Logout",
+    "nav.depreciationSchedule": "Depreciation Schedule",
     
     // Dashboard
     "dashboard.title": "Dashboard",
@@ -185,6 +186,25 @@ const translations: Record<Language, Record<string, string>> = {
     "editAsset.purchasePriceRequired": "Purchase price must be greater than 0",
     "editAsset.assignedToRequired": "Assigned to is required",
     
+    // Depreciation Schedule
+    "depreciation.schedule.jenisAset": "Asset Type",
+    "depreciation.schedule.kos": "Cost (RM)",
+    "depreciation.schedule.kadarSusut": "Depreciation Rate",
+    "depreciation.schedule.susutNilai": "Depreciation Value (RM)",
+    "depreciation.schedule.nilaiBukuBersih": "Net Book Value (RM)",
+    "depreciation.schedule.bil": "No",
+    "depreciation.schedule.tarikh": "Date",
+    "depreciation.schedule.assetDetail": "Asset Detail",
+    "depreciation.schedule.kosAset": "Asset Cost (RM)",
+    "depreciation.schedule.lupus": "Disposal (RM)",
+    "depreciation.schedule.bakiAkhir": "Ending Balance (RM)",
+    "depreciation.schedule.percentageSusut": "% Depreciation",
+    "depreciation.schedule.bakiAwal": "Opening Balance (RM)",
+    "depreciation.schedule.tambahan": "Addition (RM)",
+    "depreciation.schedule.bakiAkhir2": "Closing Balance (RM)",
+    "depreciation.schedule.nilaiBukuBersih2": "Net Book Value (RM)",
+    "depreciation.schedule.jumlah": "Total",
+    
     // Categories
     "category.itEquipment": "IT Equipment",
     "category.furniture": "Furniture",
@@ -212,6 +232,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.assets": "Aset",
     "nav.settings": "Tetapan",
     "nav.logout": "Log Keluar",
+    "nav.depreciationSchedule": "Jadual Susut Nilai",
     
     // Dashboard
     "dashboard.title": "Papan Pemuka",
@@ -363,6 +384,25 @@ const translations: Record<Language, Record<string, string>> = {
     "editAsset.purchaseDateRequired": "Tarikh pembelian diperlukan",
     "editAsset.purchasePriceRequired": "Harga belian mesti lebih besar daripada 0",
     "editAsset.assignedToRequired": "Diberikan kepada diperlukan",
+    
+    // Depreciation Schedule
+    "depreciation.schedule.jenisAset": "Jenis Aset",
+    "depreciation.schedule.kos": "Kos (RM)",
+    "depreciation.schedule.kadarSusut": "Kadar Susut",
+    "depreciation.schedule.susutNilai": "Susut Nilai (RM)",
+    "depreciation.schedule.nilaiBukuBersih": "Nilai Buku Bersih (RM)",
+    "depreciation.schedule.bil": "Bil",
+    "depreciation.schedule.tarikh": "Tarikh",
+    "depreciation.schedule.assetDetail": "Butiran Aset",
+    "depreciation.schedule.kosAset": "Kos Aset (RM)",
+    "depreciation.schedule.lupus": "Lupus (RM)",
+    "depreciation.schedule.bakiAkhir": "Baki Akhir (RM)",
+    "depreciation.schedule.percentageSusut": "% Susut",
+    "depreciation.schedule.bakiAwal": "Baki Awal (RM)",
+    "depreciation.schedule.tambahan": "Tambahan (RM)",
+    "depreciation.schedule.bakiAkhir2": "Baki Akhir (RM)",
+    "depreciation.schedule.nilaiBukuBersih2": "Nilai Buku Bersih (RM)",
+    "depreciation.schedule.jumlah": "Jumlah",
     
     // Categories
     "category.itEquipment": "Peralatan IT",

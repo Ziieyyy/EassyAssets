@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useCreateAsset } from "@/hooks/useAssets";
-import type { AssetInsert } from "@/types/database";
+import type { TablesInsert } from "@/types/database";
 import { toast } from "sonner";
 import CategoryDropdown from "@/components/ui/CategoryDropdown";
 
@@ -28,6 +28,8 @@ const statuses = [
 const depreciationMethods = [
   { value: "straight-line", label: "Straight-Line", description: "Equal depreciation each period" },
 ];
+
+type AssetInsert = TablesInsert<'assets'>;
 
 export default function AddAsset() {
   const navigate = useNavigate();
@@ -85,7 +87,8 @@ export default function AddAsset() {
 
   // Calculate depreciation based on selected method
   const depreciationData = useMemo(() => {
-    const purchasePrice = formData.purchase_price || 0;
+    // Convert purchase_price to number if it's a valid number, otherwise use 0
+    const purchasePrice = formData.purchase_price ? parseFloat(formData.purchase_price.toString()) || 0 : 0;
     const purchaseDate = formData.purchase_date ? new Date(formData.purchase_date) : new Date();
     const today = new Date();
     // Use the usefulLife state directly since it's manually set by user
@@ -198,7 +201,7 @@ export default function AddAsset() {
   const handleChange = (field: keyof AssetInsert, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (errors[field]) {
+    if (errors[field as string]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
   };
@@ -284,11 +287,17 @@ export default function AddAsset() {
     if (!formData.purchase_date) {
       newErrors.purchase_date = "Purchase date is required";
     }
-    if (!formData.purchase_price || formData.purchase_price <= 0) {
-      newErrors.purchase_price = "Unit price must be greater than 0";
+    if (formData.purchase_price) {
+      // Check if the value is numeric and if so, validate it's greater than 0
+      const numericValue = parseFloat(formData.purchase_price.toString());
+      if (!isNaN(numericValue) && numericValue <= 0) {
+        newErrors.purchase_price = "Numeric unit price must be greater than 0";
+      }
+    } else {
+      newErrors.purchase_price = "Unit price is required";
     }
-    if (unit < 0) {
-      newErrors.unit = "Unit must be a valid number";
+    if (unit <= 0) {
+      newErrors.unit = "Unit must be greater than 0";
     }
     if (!formData.assigned_to?.trim()) {
       newErrors.assigned_to = "Assigned to is required";
@@ -330,12 +339,15 @@ export default function AddAsset() {
         currentAssetValue = disposalPrice;
       }
       
+      // Convert purchase_price to numeric if it's a valid number, otherwise set to null
+      const purchasePriceValue = formData.purchase_price ? parseFloat(formData.purchase_price.toString()) : null;
+      
+      const { invoice_number, supplier_name, purchase_price, ...formDataWithoutExtraFields } = formData as any;
       const assetData = {
-        ...formData,
+        ...formDataWithoutExtraFields,
+        purchase_price: purchasePriceValue || null,
         current_value: currentAssetValue,
         useful_life: typeof usefulLife === 'number' ? usefulLife : 5, // Ensure useful_life is included in the database
-        invoice_number: formData.invoice_number,
-        supplier_name: formData.supplier_name,
         // Add status-specific fields
         status_notes: statusNotes || null,
         status_date: statusDate || null,
@@ -630,7 +642,6 @@ export default function AddAsset() {
                   Category <span className="text-destructive">*</span>
                 </Label>
                 <CategoryDropdown
-                  id="category_id"
                   value={formData.category_id || null}
                   onChange={(value) => setFormData({...formData, category_id: value})}
                   placeholder="Select Category"
@@ -786,7 +797,7 @@ export default function AddAsset() {
                     <div className="space-y-2">
                       <Label htmlFor="purchase_price" className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4" />
-                        Unit Price <span className="text-destructive">*</span>
+                        Unit Price (RM) <span className="text-destructive">*</span>
                       </Label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
@@ -797,18 +808,12 @@ export default function AddAsset() {
                           type="text"
                           inputMode="decimal"
                           placeholder="0.00"
-                          value={formData.purchase_price ? formData.purchase_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ""}
+                          value={formData.purchase_price || ""}
                           onChange={(e) => {
-                            // Allow only numbers, decimal point, and comma
+                            // Allow any characters including text
                             let value = e.target.value;
-                            // Remove commas and non-numeric characters except decimal point
-                            value = value.replace(/,/g, '').replace(/[^\d.]/g, '');
-                            // Ensure only one decimal point
-                            const parts = value.split('.');
-                            if (parts.length > 2) {
-                              value = parts[0] + '.' + parts.slice(1).join('');
-                            }
-                            handleChange("purchase_price", parseFloat(value) || 0);
+                            // Store the raw value as text
+                            handleChange("purchase_price", value);
                           }}
                           className={cn(
                             "pl-10",
@@ -830,13 +835,22 @@ export default function AddAsset() {
                         type="text"
                         inputMode="numeric"
                         placeholder="1"
-                        value={unit ? unit.toLocaleString('en-US') : ""}
+                        value={unit || ""}
                         onChange={(e) => {
-                          // Allow only numbers
+                          // Allow numbers and decimal point
                           let value = e.target.value;
-                          // Remove non-numeric characters
-                          value = value.replace(/[^\d]/g, '');
-                          handleUnitChange(parseInt(value) || 0);
+                          // Remove non-numeric characters except decimal point
+                          value = value.replace(/[^\d.]/g, '');
+                          // Ensure only one decimal point
+                          const parts = value.split('.');
+                          if (parts.length > 2) {
+                            value = parts[0] + '.' + parts.slice(1).join('');
+                          }
+                          // Handle values that start with a decimal point (e.g., .5 -> 0.5)
+                          if (value.startsWith('.')) {
+                            value = '0' + value;
+                          }
+                          handleUnitChange(parseFloat(value) || 0);
                         }}
                         className={errors.unit ? "border-destructive" : ""}
                       />
@@ -858,7 +872,7 @@ export default function AddAsset() {
                           type="text"
                           inputMode="decimal"
                           placeholder="0.00"
-                          value={total ? total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
+                          value={total ? total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
                           readOnly
                           className="pl-10 bg-muted cursor-not-allowed"
                         />
@@ -901,7 +915,7 @@ export default function AddAsset() {
                       <h4 className="font-semibold text-foreground mb-1">
                         {method.label}
                       </h4>
-                      <p className="text-xs text-muted-foreground whitespace-pre-line" dangerouslySetInnerHTML={{ __html: t("editAsset.straightLineDesc") }} />
+                      <p className="text-xs text-muted-foreground whitespace-pre-line">Reduces an asset's value by the same amount each period.<br />Purchase Price ÷ Useful Life</p>
                     </div>
                   ))}
                 </div>
@@ -980,19 +994,19 @@ export default function AddAsset() {
                 <div className="p-4 rounded-lg bg-secondary/30 border border-border">
                   <p className="text-sm text-muted-foreground mb-1">Monthly Depreciation</p>
                   <p className="text-2xl font-bold text-foreground">
-                    RM {depreciationData.monthlyDepreciation.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    RM {depreciationData.monthlyDepreciation.toLocaleString('en-MY', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-secondary/30 border border-border">
                   <p className="text-sm text-muted-foreground mb-1">Yearly Depreciation</p>
                   <p className="text-2xl font-bold text-foreground">
-                    RM {depreciationData.yearlyDepreciation.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    RM {depreciationData.yearlyDepreciation.toLocaleString('en-MY', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
                   <p className="text-sm text-muted-foreground mb-1">Accumulated Depreciation</p>
                   <p className="text-2xl font-bold text-destructive">
-                    RM {depreciationData.accumulatedDepreciation.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    RM {depreciationData.accumulatedDepreciation.toLocaleString('en-MY', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Over {depreciationData.yearsDiff} years ({depreciationData.monthsDiff} months)
@@ -1001,7 +1015,7 @@ export default function AddAsset() {
                 <div className="p-4 rounded-lg bg-success/10 border border-success/20">
                   <p className="text-sm text-muted-foreground mb-1">Remaining Value</p>
                   <p className="text-2xl font-bold text-success">
-                    RM {depreciationData.remainingValue.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    RM {depreciationData.remainingValue.toLocaleString('en-MY', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {depreciationData.depreciationRate.toFixed(1)}% annual rate
@@ -1016,7 +1030,7 @@ export default function AddAsset() {
                   <TrendingDown className="w-5 h-5 text-primary mt-0.5" />
                   <div className="flex-1">
                     <h4 className="font-semibold text-foreground mb-2">How is this calculated?</h4>
-                    <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: t("editAsset.calculationFullDesc") }} />
+                    <p className="text-sm text-muted-foreground">Depreciation is calculated from the purchase date to today using the Straight-Line method, based on the asset's purchase price and useful life. Formula: Purchase Price ÷ Useful Life</p>
                   </div>
                 </div>
               </div>

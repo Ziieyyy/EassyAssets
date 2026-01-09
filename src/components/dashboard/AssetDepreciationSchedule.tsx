@@ -25,6 +25,10 @@ export function AssetDepreciationSchedule() {
   const { data: assets, isLoading } = useAssets();
   const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
   const [selectedMonth, setSelectedMonth] = useState<string>('All Months');
+  
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString();
+    };
 
   // Get unique categories from assets
   const categories = useMemo(() => {
@@ -52,7 +56,7 @@ export function AssetDepreciationSchedule() {
     if (!assets || assets.length === 0) return [];
     
     // Filter assets by selected category if not 'All Categories'
-    let filteredAssets = selectedCategory === 'All Categories' || selectedCategory === t("assets.allCategories")
+    let filteredAssets = selectedCategory === 'All Categories' || selectedCategory === t('assets.allCategories')
       ? assets 
       : assets.filter(asset => (asset.category || "") === selectedCategory);
       
@@ -186,10 +190,9 @@ export function AssetDepreciationSchedule() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All Categories">All Categories</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category} value={category}>
-                      {category}
+                      {category === 'All Categories' ? t('assets.allCategories') : category}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -238,10 +241,9 @@ export function AssetDepreciationSchedule() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="All Categories">All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
-                    {category}
+                    {category === 'All Categories' ? t('assets.allCategories') : category}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -274,32 +276,32 @@ export function AssetDepreciationSchedule() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={3}>Jenis Aset</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={3}>Kos (RM)</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border">Kadar Susut</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={4}>Susut Nilai (RM)</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm">Nilai Buku Bersih (RM)</th>
+              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={3}>{t("depreciation.schedule.jenisAset")}</th>
+              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={3}>{t("depreciation.schedule.kos")}</th>
+              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border">{t("depreciation.schedule.kadarSusut")}</th>
+              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={4}>{t("depreciation.schedule.susutNilai")}</th>
+              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm">{t("depreciation.schedule.nilaiBukuBersih")}</th>
             </tr>
             <tr className="border-b border-border">
-              <th className="py-3 px-2 text-foreground text-center">Bil</th>
-              <th className="py-3 px-2 text-foreground text-center">Tarikh</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">Asset Detail</th>
-              <th className="py-3 px-2 text-foreground text-center">Kos Aset (RM)</th>
-              <th className="py-3 px-2 text-foreground text-center">Lupus (RM)</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">Baki Akhir (RM)</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">% Susut</th>
-              <th className="py-3 px-2 text-foreground text-center">Baki Awal (RM)</th>
-              <th className="py-3 px-2 text-foreground text-center">Tambahan (RM)</th>
-              <th className="py-3 px-2 text-foreground text-center">Lupus (RM)</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">Baki Akhir (RM)</th>
-              <th className="py-3 px-2 text-foreground text-center">nilai buku bersih (RM)</th>
+              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.bil")}</th>
+              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.tarikh")}</th>
+              <th className="py-3 px-2 text-foreground text-center border-r border-border">{t("depreciation.schedule.assetDetail")}</th>
+              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.kosAset")}</th>
+              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.lupus")}</th>
+              <th className="py-3 px-2 text-foreground text-center border-r border-border">{t("depreciation.schedule.bakiAkhir")}</th>
+              <th className="py-3 px-2 text-foreground text-center border-r border-border">{t("depreciation.schedule.percentageSusut")}</th>
+              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.bakiAwal")}</th>
+              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.tambahan")}</th>
+              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.lupus")}</th>
+              <th className="py-3 px-2 text-foreground text-center border-r border-border">{t("depreciation.schedule.bakiAkhir2")}</th>
+              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.nilaiBukuBersih2")}</th>
             </tr>
           </thead>
           <tbody>
             {depreciationSchedule.map((record) => (
               <tr key={record.no} className={`border-b border-border/50 hover:bg-accent/20 transition-colors ${record.isDisposed ? "line-through text-muted-foreground" : ""}`}>
                 <td className="py-3 px-2 text-foreground text-center">{record.no}</td>
-                <td className="py-3 px-2 text-foreground text-center">{record.date}</td>
+                <td className="py-3 px-2 text-foreground text-center">{formatDate(record.date)}</td>
                 <td className="py-3 px-2 text-foreground text-center border-r border-border">{record.assetDetail}</td>
                 <td className="py-3 px-2 text-foreground text-center">{record.costFinalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="py-3 px-2 text-foreground text-center">{record.disposal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -314,7 +316,7 @@ export function AssetDepreciationSchedule() {
             ))}
             
             <tr className="border-t border-border font-semibold">
-              <td className="py-3 px-2 text-center">Jumlah</td>
+              <td className="py-3 px-2 text-center">{t("depreciation.schedule.jumlah")}</td>
               <td className="py-3 px-2"></td>
               <td className="py-3 px-2 border-r border-border"></td>
               <td className="py-3 px-2 text-center">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.costFinalBalance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>

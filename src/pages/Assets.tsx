@@ -45,8 +45,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/lib/supabase';
 
-
-
 const statusStyles = {
   active: "bg-success/10 text-success border-success/20",
   maintenance: "bg-warning/10 text-warning border-warning/20",
@@ -144,7 +142,7 @@ export default function Assets() {
     
     loadCategories();
   }, [t]);
-  
+
   const statuses = [
     t("assets.allStatus"),
     "active",
@@ -253,15 +251,15 @@ export default function Assets() {
                 <TableHead className="text-muted-foreground">{t("assets.category")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("assets.location")}</TableHead>
                 <TableHead className="text-muted-foreground">{t("assets.status")}</TableHead>
-                <TableHead className="text-muted-foreground text-right">
-                  Cost
+                <TableHead className="text-muted-foreground text-center">
+                  Cost (RM)
                 </TableHead>
-                <TableHead className="text-muted-foreground text-right">
-                  {t("assets.currentValue")}
+                <TableHead className="text-muted-foreground text-center">
+                  {t("assets.currentValue")} (RM)
                 </TableHead>
                 <TableHead className="text-muted-foreground">{t("assets.assignedTo")}</TableHead>
-                <TableHead className="text-muted-foreground">Status Notes</TableHead>
-                <TableHead className="text-muted-foreground">Status Date</TableHead>
+                <TableHead className="text-muted-foreground w-32">Status Notes</TableHead>
+                <TableHead className="text-muted-foreground w-32">Status Date</TableHead>
                 <TableHead className="text-muted-foreground w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -276,12 +274,7 @@ export default function Assets() {
                     {asset.id}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Package className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="font-medium text-foreground">{asset.name}</span>
-                    </div>
+                    <span className="font-medium text-foreground">{asset.name}</span>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {asset.category}
@@ -297,20 +290,20 @@ export default function Assets() {
                       {t(`status.${asset.status}`)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right font-medium text-foreground">
-                    RM {(asset.purchase_price || 0).toLocaleString()}
+                  <TableCell className="text-center font-medium text-foreground">
+                    {(asset.purchase_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
-                  <TableCell className="text-right font-medium text-foreground">
-                    RM {(asset.current_value || 0).toLocaleString()}
+                  <TableCell className="text-center font-medium text-foreground">
+                    {(asset.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {asset.assigned_to || 'Unassigned'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {asset.status_notes || '-'}
+                    {(asset.status === 'active') ? '-' : (asset.status_notes || '-')}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {asset.status_date ? new Date(asset.status_date).toLocaleDateString() : '-'}
+                    {(asset.status === 'active') ? '-' : (asset.status_date ? new Date(asset.status_date).toLocaleDateString() : '-')}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

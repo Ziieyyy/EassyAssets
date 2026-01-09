@@ -56,7 +56,7 @@ export function RecentAssets() {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
-                <p className="font-medium text-foreground">
+                <p className="font-medium text-foreground text-center">
                   RM {asset.current_value?.toLocaleString() || '0'}
                 </p>
                 <p className="text-sm text-muted-foreground">{asset.assigned_to}</p>

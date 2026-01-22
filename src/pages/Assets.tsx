@@ -321,7 +321,7 @@ export default function Assets() {
               {t("assets.addNew")}
             </Button>
             <Button 
-              className="gap-2 rounded-md"
+              className="gap-2 rounded-full"
               onClick={handlePrint}
             >
               <Download className="w-4 h-4" />

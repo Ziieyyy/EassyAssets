@@ -1,5 +1,7 @@
 import { AssetDepreciationSchedule } from "@/components/dashboard/AssetDepreciationSchedule";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useAssets } from "@/hooks/useAssets";
 
@@ -248,12 +250,13 @@ export default function AssetDepreciationSchedulePage() {
               {t("dashboard.depreciationScheduleDescription")}
             </p>
           </div>
-          <button 
+          <Button 
+            className="gap-2 rounded-full"
             onClick={handlePrint}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors print:hidden"
           >
+            <Download className="w-4 h-4" />
             Print
-          </button>
+          </Button>
         </div>
         <AssetDepreciationSchedule />
       </div>

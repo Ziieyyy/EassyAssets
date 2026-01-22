@@ -64,6 +64,7 @@ const translations: Record<Language, Record<string, string>> = {
     "assets.title": "Assets",
     "assets.allAssets": "All Assets",
     "assets.addNew": "Add New Asset",
+    "assets.id": "Asset ID",
     "assets.name": "Asset Name",
     "assets.category": "Category",
     "assets.location": "Location",
@@ -85,6 +86,7 @@ const translations: Record<Language, Record<string, string>> = {
     "assets.next": "Next",
     "assets.allCategories": "All Categories",
     "assets.allStatus": "All Status",
+    "assets.print": "Print",
     
     // Asset Status
     "status.active": "Active",
@@ -263,6 +265,7 @@ const translations: Record<Language, Record<string, string>> = {
     "assets.title": "Aset",
     "assets.allAssets": "Semua Aset",
     "assets.addNew": "Tambah Aset Baru",
+    "assets.id": "ID Aset",
     "assets.name": "Nama Aset",
     "assets.category": "Kategori",
     "assets.location": "Lokasi",
@@ -284,6 +287,11 @@ const translations: Record<Language, Record<string, string>> = {
     "assets.next": "Seterusnya",
     "assets.allCategories": "Semua Kategori",
     "assets.allStatus": "Semua Status",
+    "assets.print": "Cetak",
+    
+    // Print specific
+    "print.filterApplied": "Penapis Digunakan",
+    "print.month": "Bulan",
     
     // Asset Status
     "status.active": "Aktif",

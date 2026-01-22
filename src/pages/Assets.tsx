@@ -157,6 +157,150 @@ export default function Assets() {
     }
   };
 
+  const handlePrint = () => {
+    // Create a new window with just the table data
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert('Please allow popups for printing');
+      return;
+    }
+    
+    // Only proceed if we have assets
+    if (!allAssets || allAssets.length === 0) {
+      alert('No data to print');
+      return;
+    }
+    
+    // Apply the same filtering logic as the UI
+    const filteredAssetsForPrint = allAssets.filter((asset) => {
+      const matchesSearch =
+        debouncedSearchQuery === '' ||
+        asset.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        asset.id.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+      const matchesCategory =
+        !selectedCategory ||
+        selectedCategory === t("assets.allCategories") ||
+        selectedCategory === "All Categories" ||
+        asset.category === selectedCategory;
+      const matchesStatus =
+        !selectedStatus ||
+        selectedStatus === t("assets.allStatus") ||
+        selectedStatus === "All Status" ||
+        asset.status === selectedStatus;
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+    
+    // Prepare the table data
+    const tableRows = filteredAssetsForPrint.map((asset) => `
+      <tr>
+        <td>${asset.id}</td>
+        <td>${asset.name}</td>
+        <td>${asset.category || ''}</td>
+        <td>${asset.location || ''}</td>
+        <td>${t(`status.${asset.status}`)}</td>
+        <td>${(asset.purchase_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${(asset.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${asset.assigned_to || 'Unassigned'}</td>
+        <td>${(asset.status === 'active') ? '-' : (asset.status_notes || '-')}</td>
+        <td>${(asset.status === 'active') ? '-' : (asset.status_date ? new Date(asset.status_date).toLocaleDateString() : '-')}</td>
+      </tr>`).join('');
+    
+    // Create the HTML content with embedded CSS
+    const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${t("assets.title")}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+          background: white;
+          color: black;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 12px;
+        }
+        th, td {
+          border: 1px solid #000;
+          padding: 6px;
+          text-align: left;
+          vertical-align: top;
+        }
+        th {
+          background-color: #f0f0f0;
+          font-weight: bold;
+        }
+        .filter-info {
+          margin-bottom: 15px;
+          font-size: 14px;
+        }
+        @media print {
+          @page {
+            size: A4;
+            margin: 15mm;
+          }
+          body {
+            margin: 0;
+          }
+          table {
+            page-break-inside: auto;
+          }
+          tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+          }
+          thead {
+            display: table-header-group;
+          }
+          tfoot {
+            display: table-footer-group;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <h2>${t("assets.title")}</h2>
+      <div class="filter-info">
+        <strong>${t('print.filterApplied')}:</strong><br/>
+        ${t('assets.category')}: ${selectedCategory || t('assets.allCategories')}<br/>
+        ${t('assets.status')}: ${selectedStatus || t('assets.allStatus')}
+      </div>
+      <p>${t("assets.manageTrack")}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>${t('assets.id')}</th>
+            <th>${t('assets.name')}</th>
+            <th>${t('assets.category')}</th>
+            <th>${t('assets.location')}</th>
+            <th>${t('assets.status')}</th>
+            <th>${t('assets.purchasePrice')} (RM)</th>
+            <th>${t('assets.currentValue')} (RM)</th>
+            <th>${t('assets.assignedTo')}</th>
+            <th>Status Notes</th>
+            <th>Status Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    </body>
+    </html>`;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Wait for content to load, then print
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+  
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -175,6 +319,13 @@ export default function Assets() {
             >
               <Plus className="w-4 h-4" />
               {t("assets.addNew")}
+            </Button>
+            <Button 
+              className="gap-2 rounded-full"
+              onClick={handlePrint}
+            >
+              <Download className="w-4 h-4" />
+              Print
             </Button>
           </div>
         </div>

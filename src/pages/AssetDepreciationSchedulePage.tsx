@@ -327,9 +327,9 @@ export default function AssetDepreciationSchedulePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2" onClick={handlePrint}>
+            <Button className="gap-2" onClick={handleExportPDF}>
               <Printer className="h-4 w-4" />
-              {t("common.print") || "Print"}
+              {t("Print") || "Print"}
             </Button>
 
             <Button className="gap-2" onClick={handleExportPDF}>

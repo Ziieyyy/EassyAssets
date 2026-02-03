@@ -20,11 +20,21 @@ interface DepreciationRecord {
   isDisposed: boolean;
 }
 
-export function AssetDepreciationSchedule() {
+interface AssetDepreciationScheduleProps {
+  selectedCategory: string;
+  setSelectedCategory: (value: string) => void;
+  selectedMonth: string;
+  setSelectedMonth: (value: string) => void;
+}
+
+export function AssetDepreciationSchedule({
+  selectedCategory,
+  setSelectedCategory,
+  selectedMonth,
+  setSelectedMonth,
+}: AssetDepreciationScheduleProps) {
   const { t } = useSettings();
   const { data: assets, isLoading } = useAssets();
-  const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
-  const [selectedMonth, setSelectedMonth] = useState<string>('All Months');
   
     const formatDate = (dateString: string) => {
       return new Date(dateString).toLocaleDateString();
@@ -40,13 +50,22 @@ export function AssetDepreciationSchedule() {
   // Get unique months from assets
   const months = useMemo(() => {
     if (!assets) return [];
-    const uniqueMonths = Array.from(new Set(assets.map(asset => {
-      const date = new Date(asset.purchase_date);
-      return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`; // Format as YYYY-MM
-    })));
+    const uniqueMonths = Array.from(
+      new Set(
+        assets
+          .map(asset => {
+            if (!asset.purchase_date) return '';
+            const date = new Date(asset.purchase_date);
+            return `${date.getFullYear()}-${(date.getMonth() + 1)
+              .toString()
+              .padStart(2, '0')}`; // Format as YYYY-MM
+          })
+          .filter(month => month !== '')
+      )
+    );
     
     // Sort months in descending order (newest first)
-    uniqueMonths.sort((a, b) => b.localeCompare(a));
+    uniqueMonths.sort((a: string, b: string) => b.localeCompare(a));
     
     return uniqueMonths;
   }, [assets]);
@@ -61,7 +80,7 @@ export function AssetDepreciationSchedule() {
       : assets.filter(asset => (asset.category || "") === selectedCategory);
       
     // Further filter by selected month if not 'All Months'
-    if (selectedMonth !== 'All Months') {
+    if (selectedMonth !== 'All Months' && selectedMonth !== t('print.allMonths')) {
       filteredAssets = filteredAssets.filter(asset => {
         const assetDate = new Date(asset.purchase_date);
         const assetMonth = `${assetDate.getFullYear()}-${(assetDate.getMonth() + 1).toString().padStart(2, '0')}`;

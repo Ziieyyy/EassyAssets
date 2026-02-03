@@ -1,204 +1,182 @@
+import { useState } from "react";
 import { AssetDepreciationSchedule } from "@/components/dashboard/AssetDepreciationSchedule";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useAssets } from "@/hooks/useAssets";
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function AssetDepreciationSchedulePage() {
   const { t } = useSettings();
-  const { data: assets } = useAssets();
-  
+  const { data: assets = [] } = useAssets();
+
+  // Lifted state — same pattern as in Assets.tsx
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedMonth, setSelectedMonth] = useState("All Months");
+
+  // -------------------------------------------------------------------------
+  // Shared filtering + calculation — uses current React state (not localStorage)
+  // -------------------------------------------------------------------------
+  const getFilteredDepreciationData = () => {
+    if (assets.length === 0) return [];
+
+    let filtered = [...assets];
+
+    // Category filter (exactly like Assets.tsx pattern)
+    if (selectedCategory && selectedCategory !== "All Categories" && selectedCategory !== t('assets.allCategories')) {
+      filtered = filtered.filter(asset => (asset.category || "") === selectedCategory);
+    }
+
+    // Month filter
+    if (selectedMonth && selectedMonth !== "All Months" && selectedMonth !== t('print.allMonths')) {
+      filtered = filtered.filter(asset => {
+        if (!asset.purchase_date) return false;
+        const date = new Date(asset.purchase_date);
+        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return yearMonth === selectedMonth;
+      });
+    }
+
+    // Depreciation calculation
+    return filtered.map((asset, index) => {
+      const isDisposed = asset.status === 'disposed';
+      const usefulLife = asset.useful_life || 5;
+      const rate = usefulLife > 0 ? 100 / usefulLife : 0;
+      const cost = asset.purchase_price || 0;
+      const disposalValue = isDisposed ? (asset.current_value || 0) : 0;
+      const remaining = isDisposed ? 0 : cost - disposalValue;
+      const annualDep = (cost * rate) / 100;
+      const monthlyDep = annualDep / 12;
+
+      let openingDep = 0;
+      let closingDep = 0;
+
+      if (!isDisposed && asset.purchase_date) {
+        const purchase = new Date(asset.purchase_date);
+        const now = new Date();
+        const monthsElapsed =
+          (now.getFullYear() - purchase.getFullYear()) * 12 +
+          (now.getMonth() - purchase.getMonth());
+
+        if (monthsElapsed > 0) {
+          openingDep = monthlyDep * Math.max(0, monthsElapsed - 1);
+          closingDep = openingDep + monthlyDep;
+        } else {
+          closingDep = monthlyDep;
+        }
+
+        openingDep = Math.min(openingDep, cost);
+        closingDep = Math.min(closingDep, cost);
+      }
+
+      const nbv = isDisposed ? 0 : Math.max(0, remaining - closingDep);
+
+      return {
+        no: index + 1,
+        date: asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString() : '-',
+        assetDetail: asset.name || 'Unnamed Asset',
+        costFinalBalance: cost,
+        disposal: disposalValue,
+        remainingCost: remaining,
+        depreciationRate: rate,
+        openingDepreciation: openingDep,
+        monthlyDepreciation: monthlyDep,
+        disposalDepreciation: 0,
+        closingDepreciation: closingDep,
+        netBookValue: nbv,
+        isDisposed,
+      };
+    });
+  };
+
   const handlePrint = () => {
-    // Create a new window with just the table data
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    const printWindow = window.open('', '_blank', 'width=1000,height=800');
     if (!printWindow) {
       alert('Please allow popups for printing');
       return;
     }
-    
-    // Only proceed if we have assets
-    if (!assets || assets.length === 0) {
+
+    const schedule = getFilteredDepreciationData();
+    if (schedule.length === 0) {
       alert('No data to print');
+      printWindow.close();
       return;
     }
-    
-    // Get selected category and month from localStorage or use defaults
-    const selectedCategory = localStorage.getItem('selectedCategory') || 'All Categories';
-    const selectedMonth = localStorage.getItem('selectedMonth') || 'All Months';
-    
-    // Filter assets by selected category and month
-    let filteredAssets = [...assets];
-    
-    if (selectedCategory && selectedCategory !== 'All Categories') {
-      filteredAssets = filteredAssets.filter(asset => (asset.category || "") === selectedCategory);
-    }
-    
-    if (selectedMonth && selectedMonth !== 'All Months') {
-      filteredAssets = filteredAssets.filter(asset => {
-        const assetDate = new Date(asset.purchase_date);
-        const assetMonth = `${assetDate.getFullYear()}-${(assetDate.getMonth() + 1).toString().padStart(2, '0')}`;
-        return assetMonth === selectedMonth;
-      });
-    }
-    
-    // Calculate depreciation schedule data similar to the component
-    const depreciationSchedule = filteredAssets.map((asset, index) => {
-      const isDisposed = asset.status === 'disposed';
-      const usefulLife = asset.useful_life || 5;
-      const depreciationRate = usefulLife > 0 ? (100 / usefulLife) : 0;
-      const costFinalBalance = asset.purchase_price || 0;
-      const disposal = isDisposed ? asset.current_value || 0 : 0;
-      const remainingCost = isDisposed ? 0 : costFinalBalance - disposal;
-      const annualDepreciation = (costFinalBalance * depreciationRate) / 100;
-      const monthlyDepreciation = annualDepreciation / 12;
-      
-      let openingDepreciation = 0;
-      let closingDepreciation = 0;
-      
-      if (isDisposed) {
-        openingDepreciation = 0;
-        closingDepreciation = 0;
-      } else {
-        const purchaseDate = new Date(asset.purchase_date);
-        const currentDate = new Date();
-        
-        const monthsSincePurchase = 
-          (currentDate.getFullYear() - purchaseDate.getFullYear()) * 12 +
-          (currentDate.getMonth() - purchaseDate.getMonth());
-        
-        if (monthsSincePurchase <= 0) {
-          openingDepreciation = 0;
-          closingDepreciation = monthlyDepreciation;
-        } else {
-          openingDepreciation = monthlyDepreciation * Math.max(0, monthsSincePurchase - 1);
-          closingDepreciation = openingDepreciation + monthlyDepreciation;
-        }
-        
-        openingDepreciation = Math.min(openingDepreciation, costFinalBalance);
-        closingDepreciation = Math.min(closingDepreciation, costFinalBalance);
-      }
-      
-      const disposalDepreciation = 0;
-      const netBookValue = isDisposed ? 0 : Math.max(0, remainingCost - closingDepreciation);
-      
-      return {
-        no: index + 1,
-        date: asset.purchase_date,
-        assetDetail: asset.name,
-        costFinalBalance,
-        disposal,
-        remainingCost,
-        depreciationRate,
-        openingDepreciation,
-        monthlyDepreciation,
-        disposalDepreciation,
-        closingDepreciation,
-        netBookValue,
-        isDisposed
-      };
-    });
-    
-    // Prepare the table data
-    const tableRows = depreciationSchedule.map((record) => `
+
+    const rows = schedule.map(r => `
       <tr>
-        <td>${record.no}</td>
-        <td>${new Date(record.date).toLocaleDateString()}</td>
-        <td>${record.assetDetail}</td>
-        <td>${record.costFinalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${record.disposal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${record.remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${record.depreciationRate.toFixed(2)}%</td>
-        <td>${record.openingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${record.monthlyDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${record.disposalDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${record.closingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${record.netBookValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-      </tr>`).join('');
-    
-    // Prepare the summary row
-    const summaryRow = `
+        <td>${r.no}</td>
+        <td>${r.date}</td>
+        <td>${r.assetDetail}</td>
+        <td>${r.costFinalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${r.disposal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${r.remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${r.depreciationRate.toFixed(2)}%</td>
+        <td>${r.openingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${r.monthlyDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${r.disposalDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${r.closingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${r.netBookValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+      </tr>
+    `).join('');
+
+    const summary = `
       <tr class="summary-row">
         <td>${t("depreciation.schedule.jumlah")}</td>
+        <td></td><td></td>
+        <td>${schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.costFinalBalance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${schedule.reduce((a, b) => a + b.disposal, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.remainingCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         <td></td>
-        <td></td>
-        <td>${depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.costFinalBalance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${depreciationSchedule.reduce((sum, record) => sum + record.disposal, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.remainingCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td></td>
-        <td>${depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.openingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.monthlyDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${depreciationSchedule.reduce((sum, record) => sum + record.disposalDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.closingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.netBookValue, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.openingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.monthlyDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${schedule.reduce((a, b) => a + b.disposalDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.closingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.netBookValue, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
       </tr>`;
+
+    // Format filter display
+    const categoryDisplay = selectedCategory === "All Categories" || selectedCategory === t('assets.allCategories') 
+      ? t('assets.allCategories') || 'All Categories' 
+      : selectedCategory;
     
-    // Create the HTML content with embedded CSS
-    const printContent = `
+    const monthDisplay = selectedMonth === "All Months" || selectedMonth === t('print.allMonths')
+      ? t('print.allMonths') || 'All Months'
+      : (() => {
+          const [year, monthNum] = selectedMonth.split('-');
+          const monthName = new Date(parseInt(year), parseInt(monthNum) - 1, 1).toLocaleString('default', { month: 'long' });
+          return `${monthName} ${year}`;
+        })();
+
+    const content = `
     <!DOCTYPE html>
     <html>
     <head>
       <title>${t("dashboard.assetDepreciationSchedule")}</title>
       <style>
-        body {
-          font-family: Arial, sans-serif;
-          margin: 20px;
-          background: white;
-          color: black;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 12px;
-        }
-        th, td {
-          border: 1px solid #000;
-          padding: 6px;
-          text-align: center;
-          vertical-align: top;
-        }
-        th {
-          background-color: #f0f0f0;
-          font-weight: bold;
-        }
-        .summary-row {
-          font-weight: bold;
-          background-color: #f9f9f9;
-        }
-        .filter-info {
-          margin-bottom: 15px;
-          font-size: 14px;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background: white; color: black; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: middle; }
+        th { background-color: #f0f0f0; font-weight: bold; }
+        .summary-row { font-weight: bold; background-color: #f9f9f9; }
+        .filter-info { margin-bottom: 15px; font-size: 14px; }
         @media print {
-          @page {
-            size: A4;
-            margin: 15mm;
-          }
-          body {
-            margin: 0;
-          }
-          table {
-            page-break-inside: auto;
-          }
-          tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-          }
-          thead {
-            display: table-header-group;
-          }
-          tfoot {
-            display: table-footer-group;
-          }
+          @page { size: A4 landscape; margin: 12mm; }
+          body { margin: 0; }
+          table { page-break-inside: auto; }
+          tr { page-break-inside: avoid; page-break-after: auto; }
+          thead { display: table-header-group; }
         }
       </style>
     </head>
     <body>
       <h2>${t("dashboard.assetDepreciationSchedule")}</h2>
       <div class="filter-info">
-        <strong>${t('print.filterApplied')}:</strong><br/>
-        ${t('assets.category')}: ${selectedCategory}<br/>
-        ${t('print.month')}: ${selectedMonth}
+        <strong>${t('print.filterApplied') || 'Filters applied'}:</strong><br/>
+        ${t('assets.category')}: ${categoryDisplay}<br/>
+        ${t('print.month') || 'Month'}: ${monthDisplay}
       </div>
       <p>${t("dashboard.depreciationScheduleDescription")}</p>
       <table>
@@ -223,23 +201,120 @@ export default function AssetDepreciationSchedulePage() {
           </tr>
         </thead>
         <tbody>
-          ${tableRows}
-          ${summaryRow}
+          ${rows}${summary}
         </tbody>
       </table>
     </body>
     </html>`;
-    
-    printWindow.document.write(printContent);
+
+    printWindow.document.write(content);
     printWindow.document.close();
     printWindow.focus();
-    
-    // Wait for content to load, then print
-    printWindow.onload = () => {
-      printWindow.print();
-    };
+    printWindow.onload = () => printWindow.print();
   };
-  
+
+  const handleExportPDF = () => {
+    const schedule = getFilteredDepreciationData();
+    if (schedule.length === 0) {
+      alert(t("assets.noDataToExport") || 'No data to export');
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    // Format filter display for PDF
+    const categoryDisplay = selectedCategory === "All Categories" || selectedCategory === t('assets.allCategories') 
+      ? t('assets.allCategories') || 'All Categories' 
+      : selectedCategory;
+    
+    const monthDisplay = selectedMonth === "All Months" || selectedMonth === t('print.allMonths')
+      ? t('print.allMonths') || 'All Months'
+      : (() => {
+          const [year, monthNum] = selectedMonth.split('-');
+          const monthName = new Date(parseInt(year), parseInt(monthNum) - 1, 1).toLocaleString('default', { month: 'long' });
+          return `${monthName} ${year}`;
+        })();
+
+    doc.setFontSize(16);
+    doc.text(t("dashboard.assetDepreciationSchedule"), 14, 15);
+
+    doc.setFontSize(11);
+    doc.setTextColor(80);
+    doc.text(
+      `${t('assets.category')}: ${categoryDisplay}   |   ${t('print.month') || 'Month'}: ${monthDisplay}`,
+      14,
+      22
+    );
+
+    const head = [
+      [
+        t("depreciation.schedule.bil"),
+        t("depreciation.schedule.tarikh"),
+        t("depreciation.schedule.assetDetail"),
+        t("depreciation.schedule.kosAset"),
+        t("depreciation.schedule.lupus"),
+        t("depreciation.schedule.bakiAkhir"),
+        t("depreciation.schedule.kadarSusut"),
+        t("depreciation.schedule.bakiAwal"),
+        t("depreciation.schedule.tambahan"),
+        t("depreciation.schedule.lupus"),
+        t("depreciation.schedule.bakiAkhir2"),
+        t("depreciation.schedule.nilaiBukuBersih"),
+      ],
+      ["", "", "", "", "", "", "", t("depreciation.schedule.bakiAwal"), t("depreciation.schedule.tambahan"), t("depreciation.schedule.lupus"), t("depreciation.schedule.bakiAkhir2"), ""]
+    ];
+
+    const body = schedule.map(r => [
+      r.no,
+      r.date,
+      r.assetDetail,
+      r.costFinalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      r.disposal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      r.remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      `${r.depreciationRate.toFixed(2)}%`,
+      r.openingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      r.monthlyDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      r.disposalDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      r.closingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      r.netBookValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    ]);
+
+    body.push([
+      t("depreciation.schedule.jumlah"),
+      "", "",
+      schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.costFinalBalance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      schedule.reduce((a, b) => a + b.disposal, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.remainingCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      "",
+      schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.openingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.monthlyDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      schedule.reduce((a, b) => a + b.disposalDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.closingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.netBookValue, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    ]);
+
+    autoTable(doc, {
+      head,
+      body,
+      startY: 28,
+      theme: 'grid',
+      headStyles: { fillColor: [240,240,240], textColor: 0, fontStyle: 'bold', fontSize: 8, halign: 'center', valign: 'middle' },
+      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak', halign: 'center', valign: 'middle' },
+      columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 22 }, 2: { cellWidth: 38 }, 6: { cellWidth: 18 } },
+      margin: { top: 28, left: 12, right: 12 },
+      didParseCell: data => {
+        if (data.row.index === body.length - 1) {
+          data.cell.styles.fillColor = [249,249,249];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      },
+      showHead: 'everyPage',
+      rowPageBreak: 'avoid',
+    });
+
+    doc.save(`depreciation-schedule-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <MainLayout>
       <div className="space-y-8">
@@ -250,15 +325,27 @@ export default function AssetDepreciationSchedulePage() {
               {t("dashboard.depreciationScheduleDescription")}
             </p>
           </div>
-          <Button 
-            className="gap-2 rounded-full"
-            onClick={handlePrint}
-          >
-            <Download className="w-4 h-4" />
-            Print
-          </Button>
+
+          <div className="flex items-center gap-3">
+            <Button variant="outline" className="gap-2" onClick={handlePrint}>
+              <Printer className="h-4 w-4" />
+              {t("common.print") || "Print"}
+            </Button>
+
+            <Button className="gap-2" onClick={handleExportPDF}>
+              <Download className="h-4 w-4" />
+              Export PDF
+            </Button>
+          </div>
         </div>
-        <AssetDepreciationSchedule />
+
+        {/* Pass current filters + setters to child component */}
+        <AssetDepreciationSchedule
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+        />
       </div>
     </MainLayout>
   );

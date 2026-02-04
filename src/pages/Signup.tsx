@@ -57,21 +57,21 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F5EFFF] via-[#E5D9F2] to-[#d4c8e8] p-4">
       <div className="w-full max-w-xl">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="p-3 rounded-xl bg-primary/10">
-            <Package className="w-8 h-8 text-primary" />
+          <div className="p-3 rounded-xl bg-gradient-to-br from-[#F5EFFF] to-[#E5D9F2] shadow-lg shadow-stone-400/30">
+            <Package className="w-8 h-8 text-stone-800" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">myEasyAssets</h1>
+          <h1 className="text-3xl font-bold text-stone-800">myEasyAssets</h1>
         </div>
 
         {/* Signup Card */}
-        <Card className="glass">
+        <Card className="bg-[#E5D9F2] border border-stone-400/40 shadow-xl shadow-stone-400/50">
           <CardHeader>
-            <CardTitle className="text-2xl">Create Account</CardTitle>
-            <CardDescription>Sign up to start managing your assets</CardDescription>
+            <CardTitle className="text-2xl text-stone-800">Create Account</CardTitle>
+            <CardDescription className="text-stone-600">Sign up to start managing your assets</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -83,7 +83,7 @@ export default function Signup() {
 
               {/* Company Name - Optional */}
               <div className="space-y-2">
-                <Label htmlFor="companyName" className="flex items-center gap-2">
+                <Label htmlFor="companyName" className="flex items-center gap-2 text-stone-700">
                   <Building2 className="w-4 h-4" />
                   Company Name (Optional)
                 </Label>
@@ -94,16 +94,16 @@ export default function Signup() {
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   disabled={loading}
-                  className="bg-secondary/50"
+                  className="bg-[#F5EFFF] border-stone-300 focus:border-[#E5D9F2] text-stone-800 placeholder-stone-500"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-stone-500">
                   Your company name (can be the same as other users)
                 </p>
               </div>
 
               {/* Full Name - Optional */}
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="flex items-center gap-2">
+                <Label htmlFor="fullName" className="flex items-center gap-2 text-stone-700">
                   <User className="w-4 h-4" />
                   Full Name (Optional)
                 </Label>
@@ -114,13 +114,13 @@ export default function Signup() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={loading}
-                  className="bg-secondary/50"
+                  className="bg-[#F5EFFF] border-stone-300 focus:border-[#E5D9F2] text-stone-800 placeholder-stone-500"
                 />
               </div>
               
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-2">
+                <Label htmlFor="email" className="flex items-center gap-2 text-stone-700">
                   <Mail className="w-4 h-4" />
                   Email <span className="text-destructive">*</span>
                 </Label>
@@ -132,13 +132,13 @@ export default function Signup() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading}
-                  className="bg-secondary/50"
+                  className="bg-[#F5EFFF] border-stone-300 focus:border-[#E5D9F2] text-stone-800 placeholder-stone-500"
                 />
               </div>
 
               {/* Password */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="flex items-center gap-2">
+                <Label htmlFor="password" className="flex items-center gap-2 text-stone-700">
                   <Lock className="w-4 h-4" />
                   Password <span className="text-destructive">*</span>
                 </Label>
@@ -153,7 +153,7 @@ export default function Signup() {
                     onBlur={() => setPasswordFocused(false)}
                     required
                     disabled={loading}
-                    className="bg-secondary/50 pr-10"
+                    className="bg-[#F5EFFF] border-stone-300 focus:border-[#E5D9F2] text-stone-800 placeholder-stone-500 pr-10"
                   />
                   <Button
                     type="button"
@@ -178,7 +178,7 @@ export default function Signup() {
 
               {/* Confirm Password */}
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="flex items-center gap-2">
+                <Label htmlFor="confirmPassword" className="flex items-center gap-2 text-stone-700">
                   <Lock className="w-4 h-4" />
                   Confirm Password <span className="text-destructive">*</span>
                 </Label>
@@ -191,7 +191,7 @@ export default function Signup() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     disabled={loading}
-                    className="bg-secondary/50 pr-10"
+                    className="bg-[#F5EFFF] border-stone-300 focus:border-[#E5D9F2] text-stone-800 placeholder-stone-500 pr-10"
                   />
                   <Button
                     type="button"
@@ -217,7 +217,7 @@ export default function Signup() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-[#F5EFFF] to-[#E5D9F2] hover:from-[#f0f4ff] hover:to-[#e0d0f5] text-stone-800 border border-stone-300 font-semibold shadow-lg shadow-stone-400/40 hover:shadow-stone-500/50 transition-all"
                 disabled={loading || !isPasswordValid || !passwordsMatch}
               >
                 {loading ? (
@@ -232,9 +232,9 @@ export default function Signup() {
             </form>
           </CardContent>
           <CardFooter className="flex justify-center">
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:underline font-medium">
+            <p className="text-sm text-stone-600">
+              Already have an account? {" "}
+              <Link to="/login" className="text-stone-600 hover:text-stone-800 hover:underline font-medium transition-colors">
                 Sign in
               </Link>
             </p>

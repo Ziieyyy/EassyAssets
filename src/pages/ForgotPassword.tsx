@@ -22,17 +22,31 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      
+      const { data, error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
       });
 
-      if (resetError) throw resetError;
+      if (resetError) {
+        console.error("Supabase resetPasswordForEmail error:", {
+          message: resetError.message,
+          status: resetError.status,
+          name: resetError.name,
+        });
+        throw resetError;
+      }
 
       setSuccess(true);
       toast.success("Password reset link sent to your email!");
     } catch (err: any) {
-      setError(err.message || "Failed to send reset link");
-      toast.error(err.message || "Failed to send reset link");
+      const message =
+        err?.message ||
+        err?.error_description ||
+        err?.msg ||
+        "Failed to send reset link. Please try again.";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

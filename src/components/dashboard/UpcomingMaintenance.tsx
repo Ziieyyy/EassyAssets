@@ -46,7 +46,7 @@ export function UpcomingMaintenance() {
               <p className="text-sm text-muted-foreground">{task.task}</p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar className="w-3 h-3 transition-transform duration-300 group-hover/item:scale-110" />
-                <span>{new Date(task.due_date).toLocaleDateString()}</span>
+                <span>{new Date(task.due_date).toLocaleDateString('en-GB')}</span>
                 {task.daysUntilDue !== undefined && task.daysUntilDue <= 3 && (
                   <span className="flex items-center gap-1 text-warning transition-all duration-300 group-hover/item:scale-105">
                     <AlertTriangle className="w-3 h-3 animate-pulse" />

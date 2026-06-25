@@ -1,8 +1,12 @@
-import { useMemo, useState } from "react";
-import { Loader2, ChevronDown } from "lucide-react";
+import { useMemo } from "react";
+import { Loader2, CalendarIcon, X } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface DepreciationRecord {
   no: number;
@@ -23,51 +27,42 @@ interface DepreciationRecord {
 interface AssetDepreciationScheduleProps {
   selectedCategory: string;
   setSelectedCategory: (value: string) => void;
-  selectedMonth: string;
-  setSelectedMonth: (value: string) => void;
+  selectedDate: Date | null;
+  setSelectedDate: (value: Date | null) => void;
 }
 
 export function AssetDepreciationSchedule({
   selectedCategory,
   setSelectedCategory,
-  selectedMonth,
-  setSelectedMonth,
+  selectedDate,
+  setSelectedDate,
 }: AssetDepreciationScheduleProps) {
-  const { t } = useSettings();
+  const { t, language } = useSettings();
   const { data: assets, isLoading } = useAssets();
   
-    const formatDate = (dateString: string) => {
-      return new Date(dateString).toLocaleDateString();
-    };
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const formatSelectedDate = (date: Date) => {
+    return date.toLocaleDateString(language === 'ms' ? 'ms-MY' : 'en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
 
   // Get unique categories from assets
   const categories = useMemo(() => {
     if (!assets) return [];
     const uniqueCategories = Array.from(new Set(assets.map(asset => asset.category || "")));
     return ["All Categories", ...uniqueCategories.filter(cat => cat !== "")];
-  }, [assets]);
-
-  // Get unique months from assets
-  const months = useMemo(() => {
-    if (!assets) return [];
-    const uniqueMonths = Array.from(
-      new Set(
-        assets
-          .map(asset => {
-            if (!asset.purchase_date) return '';
-            const date = new Date(asset.purchase_date);
-            return `${date.getFullYear()}-${(date.getMonth() + 1)
-              .toString()
-              .padStart(2, '0')}`; // Format as YYYY-MM
-          })
-          .filter(month => month !== '')
-      )
-    );
-    
-    // Sort months in descending order (newest first)
-    uniqueMonths.sort((a: string, b: string) => b.localeCompare(a));
-    
-    return uniqueMonths;
   }, [assets]);
 
   // Calculate depreciation schedule data
@@ -79,12 +74,14 @@ export function AssetDepreciationSchedule({
       ? assets 
       : assets.filter(asset => (asset.category || "") === selectedCategory);
       
-    // Further filter by selected month if not 'All Months'
-    if (selectedMonth !== 'All Months' && selectedMonth !== t('print.allMonths')) {
+    // Further filter by selected date: show assets purchased on or before the selected date
+    if (selectedDate) {
       filteredAssets = filteredAssets.filter(asset => {
+        if (!asset.purchase_date) return false;
         const assetDate = new Date(asset.purchase_date);
-        const assetMonth = `${assetDate.getFullYear()}-${(assetDate.getMonth() + 1).toString().padStart(2, '0')}`;
-        return assetMonth === selectedMonth;
+        const compareAssetDate = new Date(assetDate.getFullYear(), assetDate.getMonth(), assetDate.getDate());
+        const compareSelectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+        return compareAssetDate <= compareSelectedDate;
       });
     }
 
@@ -109,74 +106,54 @@ export function AssetDepreciationSchedule({
       // Calculate annual depreciation amount
       const annualDepreciation = (costFinalBalance * depreciationRate) / 100;
       
-      // Calculate monthly depreciation - Excel Logic: Monthly Depreciation = (Asset Cost × Depreciation Rate %) / 12
+      // Calculate monthly depreciation
       const monthlyDepreciation = annualDepreciation / 12;
-      
-      // For Excel-style monthly accounting, we need to track opening and closing depreciation
-      // Month 1: Opening Depreciation = 0, Addition = Monthly Depreciation, Disposal = 0, Closing Depreciation = Addition
-      // Month 2+: Opening Depreciation = Previous Month Closing, Addition = Monthly Depreciation, Disposal = 0, Closing Depreciation = Opening + Addition
-      
-      // Since we're showing a single row per asset (not monthly breakdown), we'll calculate based on asset's purchase date
-      // and assume we're showing the current month's depreciation position
-      
-      // Excel Logic Implementation - Straight-Line Method (Monthly)
-      // Monthly Depreciation = (Asset Cost × Depreciation Rate %) / 12
-      // This maps to the "Tambahan" (Addition) column in the table
-      
-      // For Excel-style monthly accounting:
-      // Month 1: Opening Depreciation = 0, Addition = Monthly Depreciation, Disposal = 0, Closing Depreciation = Opening + Addition
-      // Month 2+: Opening Depreciation = Previous Month Closing, Addition = Monthly Depreciation, Disposal = 0, Closing Depreciation = Opening + Addition
       
       // Declare variables
       let openingDepreciation = 0;
       let closingDepreciation = 0;
+      let disposalDepreciation = 0;
+      let currentPeriodAddition = monthlyDepreciation;
       
-      // For disposed assets - all values become 0
-      if (isDisposed) {
-        openingDepreciation = 0; // Not applicable for disposed assets
-        closingDepreciation = 0; // All depreciation is disposed
-      } else {
-        // According to Excel requirements, we should remove usage of currentDate and time-based depreciation.
-        // However, to show the current depreciation position of an asset, we need some time reference.
-        // For Excel logic, we'll calculate based on the months from purchase date to current date.
-        // This represents the current month in the asset's depreciation schedule.
-        const purchaseDate = new Date(asset.purchase_date);
-        const currentDate = new Date();
-        
-        // Calculate months since purchase (as of current month)
-        // This determines which "month" in the depreciation schedule we're currently at
-        const monthsSincePurchase = 
-          (currentDate.getFullYear() - purchaseDate.getFullYear()) * 12 +
-          (currentDate.getMonth() - purchaseDate.getMonth());
-        
-        // Excel Logic Implementation:
-        // Monthly Depreciation (Addition) = (Asset Cost × Depreciation Rate %) / 12
-        // Month 1: Opening = 0, Addition = Monthly Depreciation, Disposal = 0, Closing = Opening + Addition
-        // Month n: Opening = Previous Month Closing, Addition = Monthly Depreciation, Disposal = 0, Closing = Opening + Addition
-        
-        if (monthsSincePurchase <= 0) {
-          // Asset purchased this month or in the future - Month 1 scenario
-          openingDepreciation = 0; // "Baki Awal Susut Nilai" - Opening Depreciation
-          closingDepreciation = monthlyDepreciation; // "Baki Akhir Susut Nilai" - Closing Depreciation = Opening + Addition
-        } else {
-          // Asset has been owned for some time - Month n scenario
-          // Opening Depreciation = Previous Month's Closing Depreciation
-          openingDepreciation = monthlyDepreciation * Math.max(0, monthsSincePurchase - 1); // "Baki Awal Susut Nilai"
+      const purchaseDate = asset.purchase_date ? new Date(asset.purchase_date) : null;
+      const disposalDate = asset.status_date ? new Date(asset.status_date) : null;
+      const referenceDate = selectedDate || new Date();
+
+      if (purchaseDate) {
+        const refYear = referenceDate.getFullYear();
+        const refMonth = referenceDate.getMonth();
+        const refMonthStart = new Date(refYear, refMonth, 1);
+
+        const purchaseYear = purchaseDate.getFullYear();
+        const purchaseMonth = purchaseDate.getMonth();
+
+        const disposalMonthStart = disposalDate ? new Date(disposalDate.getFullYear(), disposalDate.getMonth(), 1) : null;
+
+        const isDisposedInCurrentMonth = isDisposed && (!disposalMonthStart || refMonthStart.getTime() === disposalMonthStart.getTime());
+        const isAlreadyDisposed = isDisposed && disposalMonthStart && refMonthStart > disposalMonthStart;
+
+        if (isAlreadyDisposed) {
+          openingDepreciation = 0;
+          currentPeriodAddition = 0;
+          disposalDepreciation = 0;
+          closingDepreciation = 0;
+        } else if (isDisposedInCurrentMonth) {
+          const monthsSincePurchase = (refYear - purchaseYear) * 12 + (refMonth - purchaseMonth);
+          openingDepreciation = monthlyDepreciation * Math.max(0, monthsSincePurchase);
+          openingDepreciation = Math.min(openingDepreciation, costFinalBalance);
           
-          // Closing Depreciation = Opening Depreciation + Monthly Addition (monthlyDepreciation)
-          closingDepreciation = openingDepreciation + monthlyDepreciation; // "Baki Akhir Susut Nilai"
+          disposalDepreciation = Math.min(openingDepreciation + currentPeriodAddition, costFinalBalance);
+          closingDepreciation = 0;
+        } else {
+          const monthsSincePurchase = (refYear - purchaseYear) * 12 + (refMonth - purchaseMonth);
+          openingDepreciation = monthlyDepreciation * Math.max(0, monthsSincePurchase);
+          openingDepreciation = Math.min(openingDepreciation, costFinalBalance);
+          
+          closingDepreciation = Math.min(openingDepreciation + currentPeriodAddition, costFinalBalance);
+          disposalDepreciation = 0;
         }
-        
-        // Cap the depreciation at the asset cost to avoid over-depreciation
-        openingDepreciation = Math.min(openingDepreciation, costFinalBalance);
-        closingDepreciation = Math.min(closingDepreciation, costFinalBalance);
       }
       
-      // Calculate disposal depreciation (for disposed assets)
-      const disposalDepreciation = 0; // Currently not tracking disposal depreciation separately
-      
-      // Calculate Net Book Value using the formula: Net Book Value = Cost Closing Balance − Depreciation Closing Balance
-      // For disposed assets, both cost and depreciation closing balances are 0
       const netBookValue = isDisposed ? 0 : Math.max(0, remainingCost - closingDepreciation);
 
       return {
@@ -188,14 +165,14 @@ export function AssetDepreciationSchedule({
         remainingCost,
         depreciationRate,
         openingDepreciation,
-        monthlyDepreciation,
+        monthlyDepreciation: currentPeriodAddition,
         disposalDepreciation,
         closingDepreciation,
         netBookValue,
         isDisposed
       };
     });
-  }, [assets, selectedCategory, selectedMonth]);
+  }, [assets, selectedCategory, selectedDate]);
 
   if (isLoading) {
     return (
@@ -217,26 +194,14 @@ export function AssetDepreciationSchedule({
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-48">
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All Months">All Months</SelectItem>
-                  {months.map((month) => {
-                    // Format month for display (e.g., 2023-05 to May 2023)
-                    const [year, monthNum] = month.split('-');
-                    const monthName = new Date(parseInt(year), parseInt(monthNum) - 1, 1).toLocaleString('default', { month: 'long' });
-                    return (
-                      <SelectItem key={month} value={month}>
-                        {monthName} {year}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+            <Button
+              variant="outline"
+              disabled
+              className="w-56 justify-start text-left font-normal border border-neutral-300 dark:border-neutral-700 bg-background text-muted-foreground"
+            >
+              <CalendarIcon className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+              <span>{t('print.allMonths') || 'All Months'}</span>
+            </Button>
           </div>
         </div>
         <div className="flex items-center justify-center py-8">
@@ -268,25 +233,52 @@ export function AssetDepreciationSchedule({
               </SelectContent>
             </Select>
           </div>
-          <div className="w-48">
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All Months">All Months</SelectItem>
-                {months.map((month) => {
-                  // Format month for display (e.g., 2023-05 to May 2023)
-                  const [year, monthNum] = month.split('-');
-                  const monthName = new Date(parseInt(year), parseInt(monthNum) - 1, 1).toLocaleString('default', { month: 'long' });
-                  return (
-                    <SelectItem key={month} value={month}>
-                      {monthName} {year}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+          <div className="w-56">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal border border-neutral-300 dark:border-neutral-700 bg-background hover:bg-accent hover:text-accent-foreground",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  {selectedDate ? (
+                    <span className="truncate">{formatSelectedDate(selectedDate)}</span>
+                  ) : (
+                    <span>{t('print.allMonths') || 'All Months'}</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <div className="p-2 border-b border-border flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t('assets.selectDate') || 'Select Date'}
+                  </span>
+                  {selectedDate && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1 text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDate(null);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                      {t('common.clear') || 'Clear'}
+                    </Button>
+                  )}
+                </div>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate || undefined}
+                  onSelect={(date) => setSelectedDate(date || null)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
@@ -294,58 +286,56 @@ export function AssetDepreciationSchedule({
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-border">
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={3}>{t("depreciation.schedule.jenisAset")}</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={3}>{t("depreciation.schedule.kos")}</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border">{t("depreciation.schedule.kadarSusut")}</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm border-r border-border" colSpan={4}>{t("depreciation.schedule.susutNilai")}</th>
-              <th className="text-center py-3 px-2 font-medium text-muted-foreground text-sm">{t("depreciation.schedule.nilaiBukuBersih")}</th>
+            <tr className="border-b border-neutral-400 dark:border-neutral-600">
+              <th className="text-center py-3 px-2 font-semibold text-foreground text-sm border-r border-neutral-350 dark:border-neutral-650" colSpan={3}>{t("depreciation.schedule.jenisAset")}</th>
+              <th className="text-center py-3 px-2 font-semibold text-foreground text-sm border-r border-neutral-350 dark:border-neutral-650" colSpan={3}>{t("depreciation.schedule.kos")}</th>
+              <th className="text-center py-3 px-2 font-semibold text-foreground text-sm border-r border-neutral-350 dark:border-neutral-650">{t("depreciation.schedule.kadarSusut")}</th>
+              <th className="text-center py-3 px-2 font-semibold text-foreground text-sm border-r border-neutral-350 dark:border-neutral-650" colSpan={4}>{t("depreciation.schedule.susutNilai")}</th>
+              <th className="text-center py-3 px-2 font-semibold text-foreground text-sm">{t("depreciation.schedule.nilaiBukuBersih")}</th>
             </tr>
-            <tr className="border-b border-border">
-              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.bil")}</th>
-              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.tarikh")}</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">{t("depreciation.schedule.assetDetail")}</th>
-              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.kosAset")}</th>
-              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.lupus")}</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">{t("depreciation.schedule.bakiAkhir")}</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">{t("depreciation.schedule.percentageSusut")}</th>
-              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.bakiAwal")}</th>
-              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.tambahan")}</th>
-              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.lupus")}</th>
-              <th className="py-3 px-2 text-foreground text-center border-r border-border">{t("depreciation.schedule.bakiAkhir2")}</th>
-              <th className="py-3 px-2 text-foreground text-center">{t("depreciation.schedule.nilaiBukuBersih2")}</th>
+            <tr className="border-b border-neutral-400 dark:border-neutral-600">
+              <th className="py-3 px-2 text-foreground font-semibold text-center">{t("depreciation.schedule.bil")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center">{t("depreciation.schedule.tarikh")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center border-r border-neutral-350 dark:border-neutral-650">{t("depreciation.schedule.assetDetail")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center">{t("depreciation.schedule.kosAset")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center">{t("depreciation.schedule.lupus")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center border-r border-neutral-350 dark:border-neutral-650">{t("depreciation.schedule.bakiAkhir")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center border-r border-neutral-350 dark:border-neutral-650">{t("depreciation.schedule.percentageSusut")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center">{t("depreciation.schedule.bakiAwal")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center">{t("depreciation.schedule.tambahan")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center">{t("depreciation.schedule.lupus")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center border-r border-neutral-350 dark:border-neutral-650">{t("depreciation.schedule.bakiAkhir2")}</th>
+              <th className="py-3 px-2 text-foreground font-semibold text-center">{t("depreciation.schedule.nilaiBukuBersih2")}</th>
             </tr>
           </thead>
           <tbody>
             {depreciationSchedule.map((record) => (
-              <tr key={record.no} className={`border-b border-border/50 hover:bg-accent/20 transition-colors ${record.isDisposed ? "line-through text-muted-foreground" : ""}`}>
+              <tr key={record.no} className={`border-b border-neutral-300 dark:border-neutral-700 hover:bg-accent/10 transition-colors ${record.isDisposed ? "line-through text-muted-foreground" : ""}`}>
                 <td className="py-3 px-2 text-foreground text-center">{record.no}</td>
                 <td className="py-3 px-2 text-foreground text-center">{formatDate(record.date)}</td>
-                <td className="py-3 px-2 text-foreground text-center border-r border-border">{record.assetDetail}</td>
+                <td className="py-3 px-2 text-foreground text-center border-r border-neutral-300 dark:border-neutral-700">{record.assetDetail}</td>
                 <td className="py-3 px-2 text-foreground text-center">{record.costFinalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="py-3 px-2 text-foreground text-center">{record.disposal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-3 px-2 text-foreground text-center border-r border-border">{record.remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-3 px-2 text-foreground text-center border-r border-border">{record.depreciationRate.toFixed(2)}%</td>
+                <td className="py-3 px-2 text-foreground text-center border-r border-neutral-300 dark:border-neutral-700">{record.remainingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center border-r border-neutral-300 dark:border-neutral-700">{record.depreciationRate.toFixed(2)}%</td>
                 <td className="py-3 px-2 text-foreground text-center">{record.openingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="py-3 px-2 text-foreground text-center">{record.monthlyDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="py-3 px-2 text-foreground text-center">{record.disposalDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-3 px-2 text-foreground text-center border-r border-border">{record.closingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-3 px-2 text-foreground text-center border-r border-neutral-300 dark:border-neutral-700">{record.closingDepreciation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="py-3 px-2 text-foreground text-center font-medium">{record.netBookValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
             
-            <tr className="border-t border-border font-semibold">
-              <td className="py-3 px-2 text-center">{t("depreciation.schedule.jumlah")}</td>
-              <td className="py-3 px-2"></td>
-              <td className="py-3 px-2 border-r border-border"></td>
+            <tr className="accounting-total-row font-semibold bg-neutral-50/50 dark:bg-neutral-900/30">
+              <td className="py-3 px-6 text-left border-r border-neutral-350 dark:border-neutral-650" colSpan={3}>{t("depreciation.schedule.jumlah")}</td>
               <td className="py-3 px-2 text-center">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.costFinalBalance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               <td className="py-3 px-2 text-center">{depreciationSchedule.reduce((sum, record) => sum + record.disposal, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td className="py-3 px-2 text-center border-r border-border">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.remainingCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td className="py-3 px-2 border-r border-border"></td>
+              <td className="py-3 px-2 text-center border-r border-neutral-300 dark:border-neutral-700">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.remainingCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 border-r border-neutral-300 dark:border-neutral-700"></td>
               <td className="py-3 px-2 text-center">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.openingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               <td className="py-3 px-2 text-center">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.monthlyDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               <td className="py-3 px-2 text-center">{depreciationSchedule.reduce((sum, record) => sum + record.disposalDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td className="py-3 px-2 text-center border-r border-border">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.closingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="py-3 px-2 text-center border-r border-neutral-300 dark:border-neutral-700">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.closingDepreciation, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               <td className="py-3 px-2 text-center font-medium">{depreciationSchedule.filter(record => !record.isDisposed).reduce((sum, record) => sum + record.netBookValue, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
           </tbody>

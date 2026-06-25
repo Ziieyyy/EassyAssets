@@ -99,17 +99,7 @@ const Landing = () => {
             The professional way to track, maintain, and depreciate your assets.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-[#F5EFFF] to-[#E5D9F2] hover:from-[#f0f4ff] hover:to-[#e0d0f5] text-stone-800 px-8 py-6 text-lg font-semibold rounded-xl shadow-lg shadow-stone-400/40 hover:shadow-stone-500/50 transition-all"
-              onClick={() => navigate('/login')}
-              data-aos="zoom-in"
-              data-aos-delay="300"
-            >
-              Get Started
-            </Button>
-          </div>
+
         </div>
       </section>
 
@@ -162,7 +152,7 @@ const Landing = () => {
             className="bg-gradient-to-r from-[#F5EFFF] to-[#E5D9F2] hover:from-[#f0f4ff] hover:to-[#e0d0f5] text-stone-800 px-12 py-7 text-xl font-semibold rounded-xl shadow-2xl shadow-stone-400/50 hover:shadow-stone-500/60 transition-all hover:scale-105"
             onClick={() => navigate('/login')}
           >
-            Launch Dashboard
+            Get Started
           </Button>
         </div>
       </section>

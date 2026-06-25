@@ -32,6 +32,7 @@ export type Database = {
           status_notes: string | null
           status_date: string | null
           company_id: string | null
+          warranty_image: string | null
         }
         Insert: {
           id?: string
@@ -55,6 +56,7 @@ export type Database = {
           status_notes?: string | null
           status_date?: string | null
           company_id?: string | null
+          warranty_image?: string | null
         }
         Update: {
           id?: string
@@ -78,6 +80,7 @@ export type Database = {
           status_notes?: string | null
           status_date?: string | null
           company_id?: string | null
+          warranty_image?: string | null
         }
         Relationships: [
           {

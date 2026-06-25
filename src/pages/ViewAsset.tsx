@@ -17,10 +17,12 @@ const statusStyles = {
 };
 
 export default function ViewAsset() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams();
+  const id = params["*"];
   const navigate = useNavigate();
   const { data: asset, isLoading, isError, error } = useAsset(id || "");
   const [isInvoiceZoomed, setIsInvoiceZoomed] = useState(false);
+  const [isWarrantyZoomed, setIsWarrantyZoomed] = useState(false);
   const [categoryName, setCategoryName] = useState(asset?.category || "");
   
   // Update category name when asset is loaded
@@ -77,11 +79,13 @@ export default function ViewAsset() {
           </Button>
         </div>
 
-        {/* 2x2 Grid Layout */}
+        {/* 2-Column Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Left: Asset Image */}
-          <div>
-            <Card className="glass border-border h-full">
+          
+          {/* Left Column: Visual Assets (Images & Documents) */}
+          <div className="space-y-6">
+            {/* Asset Image */}
+            <Card className="glass border-border">
               <CardContent className="p-0">
                 {asset.image_url ? (
                   <div className="w-full h-80 rounded-lg overflow-hidden border-2 border-border">
@@ -101,11 +105,72 @@ export default function ViewAsset() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Warranty Document */}
+            {asset.warranty_image && (
+              <Card className="glass border-border">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-primary" />
+                    Warranty Document
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div 
+                    className="w-full h-80 rounded-lg overflow-hidden border-2 border-border cursor-pointer hover:border-primary transition-all group relative"
+                    onClick={() => setIsWarrantyZoomed(true)}
+                  >
+                    <img
+                      src={asset.warranty_image}
+                      alt="Warranty Document"
+                      className="w-full h-full object-contain bg-secondary/30 group-hover:opacity-90 transition-opacity"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                      <div className="bg-primary text-primary-foreground rounded-full p-3">
+                        <ZoomIn className="w-6 h-6" />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-2">Click to view full size</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Assigned Invoice */}
+            {asset.assigned_invoice && (
+              <Card className="glass border-border">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-primary" />
+                    Assigned Invoice
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div 
+                    className="w-full h-80 rounded-lg overflow-hidden border-2 border-border cursor-pointer hover:border-primary transition-all group relative"
+                    onClick={() => setIsInvoiceZoomed(true)}
+                  >
+                    <img
+                      src={asset.assigned_invoice}
+                      alt="Invoice"
+                      className="w-full h-full object-contain bg-secondary/30 group-hover:opacity-90 transition-opacity"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                      <div className="bg-primary text-primary-foreground rounded-full p-3">
+                        <ZoomIn className="w-6 h-6" />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-2">Click to view full size</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {/* Top Right: Asset Name, ID, Status and Basic Information */}
-          <div>
-            <Card className="glass border-border h-full">
+          {/* Right Column: Textual Details (Info, Financials, Records, Description) */}
+          <div className="space-y-6">
+            {/* Basic Info */}
+            <Card className="glass border-border">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
@@ -167,48 +232,12 @@ export default function ViewAsset() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
 
-        {/* Bottom Row: Invoice and Financial Info */}
-        {asset.assigned_invoice ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Bottom Left: Invoice Image */}
-            <div>
-              <Card className="glass border-border h-full">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Receipt className="w-5 h-5 text-primary" />
-                    Assigned Invoice
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div 
-                    className="w-full h-80 rounded-lg overflow-hidden border-2 border-border cursor-pointer hover:border-primary transition-all group relative"
-                    onClick={() => setIsInvoiceZoomed(true)}
-                  >
-                    <img
-                      src={asset.assigned_invoice}
-                      alt="Invoice"
-                      className="w-full h-full object-contain bg-secondary/30 group-hover:opacity-90 transition-opacity"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                      <div className="bg-primary text-primary-foreground rounded-full p-3">
-                        <ZoomIn className="w-6 h-6" />
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center mt-2">Click to view full size</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Bottom Right: Financial Information and Record Information */}
-            <div className="space-y-6">
-              <Card className="glass border-border">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-primary" />
+            {/* Financial Information */}
+            <Card className="glass border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-primary" />
                   Financial Information
                 </CardTitle>
               </CardHeader>
@@ -230,8 +259,8 @@ export default function ViewAsset() {
                   <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Purchase Price</p>
-                    <p className="text-foreground font-medium text-lg text-center">
-                      {(asset.purchase_price || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <p className="text-foreground font-medium text-lg">
+                      RM {(asset.purchase_price || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
@@ -239,23 +268,23 @@ export default function ViewAsset() {
                   <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Current Value</p>
-                    <p className="text-foreground font-medium text-lg text-center">
-                      {(asset.current_value || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <p className="text-foreground font-medium text-lg">
+                      RM {(asset.current_value || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
                 <div className="md:col-span-3 pt-3 border-t border-border">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">Depreciation</p>
-                    <p className="text-destructive font-medium text-center">
-                      - {((asset.purchase_price || 0) - (asset.current_value || 0)).toLocaleString('en-MY', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                    <p className="text-destructive font-medium">
+                      - RM {((asset.purchase_price || 0) - (asset.current_value || 0)).toLocaleString('en-MY', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Metadata */}
+            {/* Record Information */}
             <Card className="glass border-border">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -277,7 +306,7 @@ export default function ViewAsset() {
                   </p>
                 </div>
                 
-                {/* Status-specific information - only show when status is maintenance, inactive, or disposed */}
+                {/* Status-specific information */}
                 {(asset.status === 'maintenance' || asset.status === 'inactive' || asset.status === 'disposed') && (
                   <>
                     {asset.status_notes && (
@@ -302,91 +331,23 @@ export default function ViewAsset() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Description */}
+            {asset.description && (
+              <Card className="glass border-border">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-primary" />
+                    Description
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-foreground leading-relaxed">{asset.description}</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Empty placeholder for invoice when no invoice exists */}
-            <div className="h-0"></div>
-            
-            {/* Right column: Financial Information and Record Information */}
-            <div className="space-y-6">
-              <Card className="glass border-border">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-primary" />
-                    Financial Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground">Purchase Date</p>
-                      <p className="text-foreground font-medium">
-                        {new Date(asset.purchase_date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground">Purchase Price</p>
-                      <p className="text-foreground font-medium text-lg text-center">
-                        {(asset.purchase_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground">Current Value</p>
-                      <p className="text-foreground font-medium text-lg text-center">
-                        {(asset.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="md:col-span-3 pt-3 border-t border-border">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">Depreciation</p>
-                      <p className="text-destructive font-medium text-center">
-                        - {((asset.purchase_price || 0) - (asset.current_value || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Metadata */}
-              <Card className="glass border-border">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    Record Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">Created</p>
-                    <p className="text-foreground font-medium">
-                      {new Date(asset.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
 
         {/* Invoice Zoom Modal */}
         {isInvoiceZoomed && asset.assigned_invoice && (
@@ -411,19 +372,27 @@ export default function ViewAsset() {
           </div>
         )}
 
-        {/* Description */}
-        {asset.description && (
-          <Card className="glass border-border">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
-                Description
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-foreground leading-relaxed">{asset.description}</p>
-            </CardContent>
-          </Card>
+        {/* Warranty Zoom Modal */}
+        {isWarrantyZoomed && asset.warranty_image && (
+          <div 
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setIsWarrantyZoomed(false)}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 text-white hover:bg-white/20 rounded-full"
+              onClick={() => setIsWarrantyZoomed(false)}
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            <img
+              src={asset.warranty_image}
+              alt="Warranty - Full Size"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         )}
       </div>
     </MainLayout>

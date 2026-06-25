@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Package, Building2, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { PasswordStrengthIndicator, validatePassword } from "@/components/PasswordStrengthIndicator";
+import { Switch } from "@/components/ui/switch";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -21,11 +22,17 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [accountType, setAccountType] = useState<"personal" | "company">("company");
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const isPasswordValid = validatePassword(password);
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
+  const isFormValid =
+    email.trim() !== "" &&
+    isPasswordValid &&
+    passwordsMatch &&
+    (accountType === "company" ? companyName.trim() !== "" : fullName.trim() !== "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +52,9 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      await signUp(email, password, companyName.trim() || undefined, fullName.trim() || undefined);
+      const finalCompanyName = accountType === "company" ? companyName.trim() : "Personal";
+      const finalFullName = fullName.trim() || undefined;
+      await signUp(email, password, finalCompanyName, finalFullName);
       toast.success("Account created successfully! Please sign in.");
       navigate("/login");
     } catch (err: any) {
@@ -81,31 +90,57 @@ export default function Signup() {
                 </Alert>
               )}
 
-              {/* Company Name - Optional */}
-              <div className="space-y-2">
-                <Label htmlFor="companyName" className="flex items-center gap-2 text-stone-700">
-                  <Building2 className="w-4 h-4" />
-                  Company Name (Optional)
-                </Label>
-                <Input
-                  id="companyName"
-                  type="text"
-                  placeholder="Acme Corporation"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  disabled={loading}
-                  className="bg-[#F5EFFF] border-stone-300 focus:border-[#E5D9F2] text-stone-800 placeholder-stone-500"
-                />
-                <p className="text-xs text-stone-500">
-                  Your company name (can be the same as other users)
-                </p>
+              {/* Account Type Selector */}
+              <div className="flex items-center justify-between p-3.5 bg-[#F5EFFF]/40 border border-stone-400/20 rounded-xl mb-4 transition-all duration-300">
+                <div className="space-y-0.5">
+                  <Label className="text-sm text-stone-700 font-semibold">Account Type</Label>
+                  <p className="text-xs text-stone-500">
+                    Registering as a {accountType === "company" ? "Company" : "Personal"} account
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-medium transition-colors duration-200 ${accountType === "personal" ? "text-stone-800 font-semibold" : "text-stone-500"}`}>
+                    Personal
+                  </span>
+                  <Switch
+                    checked={accountType === "company"}
+                    onCheckedChange={(checked) => setAccountType(checked ? "company" : "personal")}
+                    className="data-[state=checked]:bg-stone-800 data-[state=unchecked]:bg-stone-400"
+                  />
+                  <span className={`text-sm font-medium transition-colors duration-200 ${accountType === "company" ? "text-stone-800 font-semibold" : "text-stone-500"}`}>
+                    Company
+                  </span>
+                </div>
               </div>
 
-              {/* Full Name - Optional */}
+              {/* Company Name - required for Company accounts */}
+              {accountType === "company" && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <Label htmlFor="companyName" className="flex items-center gap-2 text-stone-700">
+                    <Building2 className="w-4 h-4" />
+                    Company Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="companyName"
+                    type="text"
+                    placeholder="Acme Corporation"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="bg-[#F5EFFF] border-stone-300 focus:border-[#E5D9F2] text-stone-800 placeholder-stone-500"
+                  />
+                  <p className="text-xs text-stone-500">
+                    Your company name (can be the same as other users)
+                  </p>
+                </div>
+              )}
+
+              {/* Full Name - required for Personal, optional for Company */}
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="flex items-center gap-2 text-stone-700">
                   <User className="w-4 h-4" />
-                  Full Name (Optional)
+                  Full Name {accountType === "personal" ? <span className="text-destructive">*</span> : "(Optional)"}
                 </Label>
                 <Input
                   id="fullName"
@@ -113,6 +148,7 @@ export default function Signup() {
                   placeholder="John Doe"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
+                  required={accountType === "personal"}
                   disabled={loading}
                   className="bg-[#F5EFFF] border-stone-300 focus:border-[#E5D9F2] text-stone-800 placeholder-stone-500"
                 />
@@ -218,7 +254,7 @@ export default function Signup() {
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-[#F5EFFF] to-[#E5D9F2] hover:from-[#f0f4ff] hover:to-[#e0d0f5] text-stone-800 border border-stone-300 font-semibold shadow-lg shadow-stone-400/40 hover:shadow-stone-500/50 transition-all"
-                disabled={loading || !isPasswordValid || !passwordsMatch}
+                disabled={loading || !isFormValid}
               >
                 {loading ? (
                   <>

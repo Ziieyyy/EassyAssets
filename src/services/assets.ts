@@ -190,15 +190,19 @@ export const assetsService = {
 
     const { data, error } = await supabase
       .from('assets')
-      .select('category, current_value')
-      .eq('user_id', user.id) as any;
+      .select('current_value, status, categories!inner(name)')
+      .eq('user_id', user.id);
 
     if (error) throw error;
 
+    // Filter out disposed assets to match the Total Value card
+    const activeData = data?.filter((a: any) => a.status !== 'disposed') || [];
+
     const categoryMap = new Map<string, number>();
-    data?.forEach((asset: any) => {
-      const current = categoryMap.get(asset.category) || 0;
-      categoryMap.set(asset.category, current + (asset.current_value || 0));
+    activeData.forEach((asset: any) => {
+      const catName = asset.categories?.name || 'Uncategorized';
+      const current = categoryMap.get(catName) || 0;
+      categoryMap.set(catName, current + (asset.current_value || 0));
     });
 
     return Array.from(categoryMap.entries()).map(([name, value]) => ({

@@ -64,7 +64,7 @@ const App = () => (
                 }
               />
               <Route
-                path="/assets/view/:id"
+                path="/assets/view/*"
                 element={
                   <ProtectedRoute>
                     <ViewAsset />
@@ -72,7 +72,7 @@ const App = () => (
                 }
               />
               <Route
-                path="/assets/edit/:id"
+                path="/assets/edit/*"
                 element={
                   <ProtectedRoute>
                     <EditAsset />

@@ -71,6 +71,9 @@ export default function AddAsset() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const warrantyInputRef = useRef<HTMLInputElement>(null);
+  const [warrantyPreview, setWarrantyPreview] = useState<string | null>(null);
+  const [warrantyFile, setWarrantyFile] = useState<File | null>(null);
   const [showOtherCategory, setShowOtherCategory] = useState(false);
   const [customCategory, setCustomCategory] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -468,6 +471,48 @@ export default function AddAsset() {
     e.preventDefault();
   };
 
+  const handleWarrantyUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setWarrantyFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setWarrantyPreview(base64String);
+        setFormData(prev => ({ ...prev, warranty_image: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveWarranty = () => {
+    setWarrantyFile(null);
+    setWarrantyPreview(null);
+    setFormData(prev => ({ ...prev, warranty_image: null }));
+    if (warrantyInputRef.current) {
+      warrantyInputRef.current.value = "";
+    }
+  };
+
+  const handleWarrantyDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      setWarrantyFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setWarrantyPreview(base64String);
+        setFormData(prev => ({ ...prev, warranty_image: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleWarrantyDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
   return (
     <MainLayout>
       <div className="max-w-7xl mx-auto space-y-6">
@@ -504,90 +549,116 @@ export default function AddAsset() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Row 1: Asset ID and Asset Name - 2 Columns */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Asset ID */}
-                <div className="space-y-2">
-                  <Label htmlFor="id" className="flex items-center gap-2">
-                    <Hash className="w-4 h-4" />
-                    Asset ID <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="id"
-                    placeholder="e.g., AST-009"
-                    value={formData.id}
-                    onChange={(e) => handleChange("id", e.target.value)}
-                    className={errors.id ? "border-destructive" : ""}
-                  />
-                  {errors.id && (
-                    <p className="text-sm text-destructive">{errors.id}</p>
-                  )}
-                </div>
-
-                {/* Asset Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="flex items-center gap-2">
-                    <Package className="w-4 h-4" />
-                    Asset Detail <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g., Dell Laptop XPS 15"
-                    value={formData.name}
-                    onChange={(e) => handleChange("name", e.target.value)}
-                    className={errors.name ? "border-destructive" : ""}
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-destructive">{errors.name}</p>
-                  )}
-                </div>
+              {/* Row 1: Asset Name - Full Width */}
+              <div className="space-y-2">
+                <Label htmlFor="name" className="flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  Asset Detail <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleChange("name", e.target.value)}
+                  className={errors.name ? "border-destructive" : ""}
+                />
+                {errors.name && (
+                  <p className="text-sm text-destructive">{errors.name}</p>
+                )}
               </div>
 
-              {/* Row 2: Image Upload and Assigned Invoice - Side by Side */}
+              {/* Row 2: Image Upload, Warranty Image, and Assigned Invoice */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Image Upload */}
-                <div className="space-y-2">
-                  <Label>Asset Image</Label>
-                  {!imagePreview ? (
-                    <div
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors h-[140px]"
-                    >
-                      <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground text-center">
-                        Drop image or click
-                      </p>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative h-[140px] rounded-lg overflow-hidden">
-                      <img
-                        src={imagePreview}
-                        alt="Asset preview"
-                        className="w-full h-full object-cover"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-6 w-6 rounded-full"
-                        onClick={handleRemoveImage}
+                {/* Column 1: Asset Image & Warranty Image */}
+                <div className="space-y-4">
+                  {/* Image Upload */}
+                  <div className="space-y-2">
+                    <Label>Asset Image</Label>
+                    {!imagePreview ? (
+                      <div
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors h-[140px]"
                       >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
+                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground text-center">
+                          Drop image or click
+                        </p>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    ) : (
+                      <div className="relative h-[140px] rounded-lg overflow-hidden">
+                        <img
+                          src={imagePreview}
+                          alt="Asset preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                          onClick={handleRemoveImage}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Warranty Image */}
+                  <div className="space-y-2">
+                    <Label>Warranty Image</Label>
+                    {!warrantyPreview ? (
+                      <div
+                        onDrop={handleWarrantyDrop}
+                        onDragOver={handleWarrantyDragOver}
+                        onClick={() => warrantyInputRef.current?.click()}
+                        className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors h-[140px]"
+                      >
+                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground text-center">
+                          Drop image or click to upload warranty details
+                        </p>
+                        <input
+                          ref={warrantyInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleWarrantyUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    ) : (
+                      <div className="relative h-[140px] rounded-lg overflow-hidden">
+                        <img
+                          src={warrantyPreview}
+                          alt="Warranty preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                          onClick={handleRemoveWarranty}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Optional: Upload warranty image
+                    </p>
+                  </div>
                 </div>
 
-                {/* Assigned Invoice */}
+                {/* Column 2: Assigned Invoice */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Receipt className="w-4 h-4" />
@@ -645,7 +716,7 @@ export default function AddAsset() {
                   value={formData.category_id || null}
                   onChange={(value) => setFormData({...formData, category_id: value})}
                   placeholder="Select Category"
-                  className="bg-gray-800 border-gray-700"
+                  className={errors.category_id ? "border-destructive bg-transparent" : "bg-transparent"}
                   required={true}
                   showAddButton={true}
                 />
@@ -688,7 +759,6 @@ export default function AddAsset() {
                     </Label>
                     <Textarea
                       id="status_notes"
-                      placeholder="Enter notes about the status..."
                       value={statusNotes}
                       onChange={(e) => handleStatusNotesChange(e.target.value)}
                       rows={3}
@@ -728,7 +798,6 @@ export default function AddAsset() {
                   </Label>
                   <Input
                     id="location"
-                    placeholder="e.g., Office Floor 2, Room 201"
                     value={formData.location}
                     onChange={(e) => handleChange("location", e.target.value)}
                     className={errors.location ? "border-destructive" : ""}
@@ -746,7 +815,6 @@ export default function AddAsset() {
                   </Label>
                   <Input
                     id="assigned_to"
-                    placeholder="e.g., John Doe"
                     value={formData.assigned_to}
                     onChange={(e) => handleChange("assigned_to", e.target.value)}
                     className={errors.assigned_to ? "border-destructive" : ""}
@@ -807,7 +875,6 @@ export default function AddAsset() {
                           id="purchase_price"
                           type="text"
                           inputMode="decimal"
-                          placeholder="0.00"
                           value={formData.purchase_price || ""}
                           onChange={(e) => {
                             // Allow any characters including text
@@ -834,7 +901,6 @@ export default function AddAsset() {
                         id="unit"
                         type="text"
                         inputMode="numeric"
-                        placeholder="1"
                         value={unit || ""}
                         onChange={(e) => {
                           // Allow numbers and decimal point
@@ -871,7 +937,6 @@ export default function AddAsset() {
                           id="total"
                           type="text"
                           inputMode="decimal"
-                          placeholder="0.00"
                           value={total ? total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
                           readOnly
                           className="pl-10 bg-muted cursor-not-allowed"
@@ -1037,6 +1102,7 @@ export default function AddAsset() {
             </CardContent>
           </Card>
 
+
           {/* Additional Details */}
           <Card className="glass border-border">
             <CardHeader>
@@ -1059,7 +1125,6 @@ export default function AddAsset() {
                   </Label>
                   <Input
                     id="serial_number"
-                    placeholder="e.g., SN123456789"
                     value={formData.serial_number || ""}
                     onChange={(e) => handleChange("serial_number", e.target.value)}
                   />
@@ -1073,7 +1138,6 @@ export default function AddAsset() {
                   </Label>
                   <Textarea
                     id="description"
-                    placeholder="Enter additional details..."
                     rows={3}
                     value={formData.description || ""}
                     onChange={(e) => handleChange("description", e.target.value)}
@@ -1082,20 +1146,23 @@ export default function AddAsset() {
                 </div>
               </div>
               
-              {/* 2-Column Grid: Invoice Number | Supplier Name */}
+              {/* 2-Column Grid: Asset ID | Supplier Name */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                {/* Invoice Number */}
+                {/* Asset ID */}
                 <div className="space-y-2">
-                  <Label htmlFor="invoice_number" className="flex items-center gap-2">
-                    <Receipt className="w-4 h-4" />
-                    Invoice Number
+                  <Label htmlFor="id" className="flex items-center gap-2">
+                    <Hash className="w-4 h-4" />
+                    Asset ID <span className="text-destructive">*</span>
                   </Label>
                   <Input
-                    id="invoice_number"
-                    placeholder="e.g., INV-001"
-                    value={invoiceNumber || ""}
-                    onChange={(e) => handleInvoiceNumberChange(e.target.value)}
+                    id="id"
+                    value={formData.id || ""}
+                    onChange={(e) => handleChange("id", e.target.value)}
+                    className={errors.id ? "border-destructive" : ""}
                   />
+                  {errors.id && (
+                    <p className="text-sm text-destructive">{errors.id}</p>
+                  )}
                 </div>
 
                 {/* Supplier Name */}
@@ -1106,7 +1173,6 @@ export default function AddAsset() {
                   </Label>
                   <Input
                     id="supplier_name"
-                    placeholder="e.g., ABC Supplier Sdn Bhd"
                     value={supplierName || ""}
                     onChange={(e) => handleSupplierNameChange(e.target.value)}
                   />
@@ -1129,7 +1195,6 @@ export default function AddAsset() {
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder="0.00"
                       value={disposalPrice || ""}
                       onChange={(e) => setDisposalPrice(parseFloat(e.target.value) || 0)}
                       className="pl-10"

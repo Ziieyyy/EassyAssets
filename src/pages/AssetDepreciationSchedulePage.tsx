@@ -9,18 +9,28 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function AssetDepreciationSchedulePage() {
-  const { t } = useSettings();
+  const { t, language } = useSettings();
   const { data: assets = [] } = useAssets();
 
   // Lifted state — same pattern as in Assets.tsx
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
-  const [selectedMonth, setSelectedMonth] = useState("All Months");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // -------------------------------------------------------------------------
   // Shared filtering + calculation — uses current React state (not localStorage)
   // -------------------------------------------------------------------------
   const getFilteredDepreciationData = () => {
     if (assets.length === 0) return [];
+
+    const formatDate = (dateString: string | null | undefined) => {
+      if (!dateString) return "-";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
 
     let filtered = [...assets];
 
@@ -29,13 +39,14 @@ export default function AssetDepreciationSchedulePage() {
       filtered = filtered.filter(asset => (asset.category || "") === selectedCategory);
     }
 
-    // Month filter
-    if (selectedMonth && selectedMonth !== "All Months" && selectedMonth !== t('print.allMonths')) {
+    // Date filter - only show assets purchased on or before the selected date
+    if (selectedDate) {
       filtered = filtered.filter(asset => {
         if (!asset.purchase_date) return false;
-        const date = new Date(asset.purchase_date);
-        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        return yearMonth === selectedMonth;
+        const assetDate = new Date(asset.purchase_date);
+        const compareAssetDate = new Date(assetDate.getFullYear(), assetDate.getMonth(), assetDate.getDate());
+        const compareSelectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+        return compareAssetDate <= compareSelectedDate;
       });
     }
 
@@ -52,38 +63,61 @@ export default function AssetDepreciationSchedulePage() {
 
       let openingDep = 0;
       let closingDep = 0;
+      let disposalDep = 0;
+      let currentPeriodAddition = monthlyDep;
 
-      if (!isDisposed && asset.purchase_date) {
-        const purchase = new Date(asset.purchase_date);
-        const now = new Date();
-        const monthsElapsed =
-          (now.getFullYear() - purchase.getFullYear()) * 12 +
-          (now.getMonth() - purchase.getMonth());
+      const purchase = asset.purchase_date ? new Date(asset.purchase_date) : null;
+      const disposalDate = asset.status_date ? new Date(asset.status_date) : null;
+      const referenceDate = selectedDate || new Date();
 
-        if (monthsElapsed > 0) {
-          openingDep = monthlyDep * Math.max(0, monthsElapsed - 1);
-          closingDep = openingDep + monthlyDep;
+      if (purchase) {
+        const refYear = referenceDate.getFullYear();
+        const refMonth = referenceDate.getMonth();
+        const refMonthStart = new Date(refYear, refMonth, 1);
+
+        const purchaseYear = purchase.getFullYear();
+        const purchaseMonth = purchase.getMonth();
+
+        const disposalMonthStart = disposalDate ? new Date(disposalDate.getFullYear(), disposalDate.getMonth(), 1) : null;
+
+        const isDisposedInCurrentMonth = isDisposed && (!disposalMonthStart || refMonthStart.getTime() === disposalMonthStart.getTime());
+        const isAlreadyDisposed = isDisposed && disposalMonthStart && refMonthStart > disposalMonthStart;
+
+        if (isAlreadyDisposed) {
+          openingDep = 0;
+          currentPeriodAddition = 0;
+          disposalDep = 0;
+          closingDep = 0;
+        } else if (isDisposedInCurrentMonth) {
+          const monthsElapsed = (refYear - purchaseYear) * 12 + (refMonth - purchaseMonth);
+          openingDep = monthlyDep * Math.max(0, monthsElapsed);
+          openingDep = Math.min(openingDep, cost);
+          
+          disposalDep = Math.min(openingDep + currentPeriodAddition, cost);
+          closingDep = 0;
         } else {
-          closingDep = monthlyDep;
+          const monthsElapsed = (refYear - purchaseYear) * 12 + (refMonth - purchaseMonth);
+          openingDep = monthlyDep * Math.max(0, monthsElapsed);
+          openingDep = Math.min(openingDep, cost);
+          
+          closingDep = Math.min(openingDep + currentPeriodAddition, cost);
+          disposalDep = 0;
         }
-
-        openingDep = Math.min(openingDep, cost);
-        closingDep = Math.min(closingDep, cost);
       }
 
       const nbv = isDisposed ? 0 : Math.max(0, remaining - closingDep);
 
       return {
         no: index + 1,
-        date: asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString() : '-',
+        date: formatDate(asset.purchase_date),
         assetDetail: asset.name || 'Unnamed Asset',
         costFinalBalance: cost,
         disposal: disposalValue,
         remainingCost: remaining,
         depreciationRate: rate,
         openingDepreciation: openingDep,
-        monthlyDepreciation: monthlyDep,
-        disposalDepreciation: 0,
+        monthlyDepreciation: currentPeriodAddition,
+        disposalDepreciation: disposalDep,
         closingDepreciation: closingDep,
         netBookValue: nbv,
         isDisposed,
@@ -106,7 +140,7 @@ export default function AssetDepreciationSchedulePage() {
     }
 
     const rows = schedule.map(r => `
-      <tr>
+      <tr class="${r.isDisposed ? 'disposed-row' : ''}">
         <td>${r.no}</td>
         <td>${r.date}</td>
         <td>${r.assetDetail}</td>
@@ -124,8 +158,7 @@ export default function AssetDepreciationSchedulePage() {
 
     const summary = `
       <tr class="summary-row">
-        <td>${t("depreciation.schedule.jumlah")}</td>
-        <td></td><td></td>
+        <td colspan="3" style="text-align: left; padding-left: 15px;">${t("depreciation.schedule.jumlah")}</td>
         <td>${schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.costFinalBalance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         <td>${schedule.reduce((a, b) => a + b.disposal, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         <td>${schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.remainingCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -142,13 +175,9 @@ export default function AssetDepreciationSchedulePage() {
       ? t('assets.allCategories') || 'All Categories' 
       : selectedCategory;
     
-    const monthDisplay = selectedMonth === "All Months" || selectedMonth === t('print.allMonths')
-      ? t('print.allMonths') || 'All Months'
-      : (() => {
-          const [year, monthNum] = selectedMonth.split('-');
-          const monthName = new Date(parseInt(year), parseInt(monthNum) - 1, 1).toLocaleString('default', { month: 'long' });
-          return `${monthName} ${year}`;
-        })();
+    const monthDisplay = selectedDate
+      ? selectedDate.toLocaleDateString(language === 'ms' ? 'ms-MY' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+      : t('print.allMonths') || 'All Months';
 
     const content = `
     <!DOCTYPE html>
@@ -158,9 +187,14 @@ export default function AssetDepreciationSchedulePage() {
       <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: white; color: black; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th, td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: middle; }
-        th { background-color: #f0f0f0; font-weight: bold; }
+        th, td { border: 1.5px solid #111; padding: 6px; text-align: center; vertical-align: middle; }
+        th { background-color: #e5e5e5; font-weight: bold; }
         .summary-row { font-weight: bold; background-color: #f9f9f9; }
+        .summary-row td {
+          border-top: 1.5px solid #111 !important;
+          border-bottom: 4px double #111 !important;
+        }
+        .disposed-row { text-decoration: line-through; color: #888; }
         .filter-info { margin-bottom: 15px; font-size: 14px; }
         @media print {
           @page { size: A4 landscape; margin: 12mm; }
@@ -227,13 +261,9 @@ export default function AssetDepreciationSchedulePage() {
       ? t('assets.allCategories') || 'All Categories' 
       : selectedCategory;
     
-    const monthDisplay = selectedMonth === "All Months" || selectedMonth === t('print.allMonths')
-      ? t('print.allMonths') || 'All Months'
-      : (() => {
-          const [year, monthNum] = selectedMonth.split('-');
-          const monthName = new Date(parseInt(year), parseInt(monthNum) - 1, 1).toLocaleString('default', { month: 'long' });
-          return `${monthName} ${year}`;
-        })();
+    const monthDisplay = selectedDate
+      ? selectedDate.toLocaleDateString(language === 'ms' ? 'ms-MY' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+      : t('print.allMonths') || 'All Months';
 
     doc.setFontSize(16);
     doc.text(t("dashboard.assetDepreciationSchedule"), 14, 15);
@@ -260,8 +290,7 @@ export default function AssetDepreciationSchedulePage() {
         t("depreciation.schedule.lupus"),
         t("depreciation.schedule.bakiAkhir2"),
         t("depreciation.schedule.nilaiBukuBersih"),
-      ],
-      ["", "", "", "", "", "", "", t("depreciation.schedule.bakiAwal"), t("depreciation.schedule.tambahan"), t("depreciation.schedule.lupus"), t("depreciation.schedule.bakiAkhir2"), ""]
+      ]
     ];
 
     const body = schedule.map(r => [
@@ -280,8 +309,7 @@ export default function AssetDepreciationSchedulePage() {
     ]);
 
     body.push([
-      t("depreciation.schedule.jumlah"),
-      "", "",
+      { content: t("depreciation.schedule.jumlah"), colSpan: 3, styles: { halign: 'left', fontStyle: 'bold' } },
       schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.costFinalBalance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       schedule.reduce((a, b) => a + b.disposal, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       schedule.filter(r => !r.isDisposed).reduce((a, b) => a + b.remainingCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -298,14 +326,67 @@ export default function AssetDepreciationSchedulePage() {
       body,
       startY: 28,
       theme: 'grid',
-      headStyles: { fillColor: [240,240,240], textColor: 0, fontStyle: 'bold', fontSize: 8, halign: 'center', valign: 'middle' },
-      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak', halign: 'center', valign: 'middle' },
+      headStyles: { 
+        fillColor: [220, 220, 220], 
+        textColor: [0, 0, 0], 
+        fontStyle: 'bold', 
+        fontSize: 8, 
+        halign: 'center', 
+        valign: 'middle',
+        lineColor: [60, 60, 60],
+        lineWidth: 0.2
+      },
+      styles: { 
+        fontSize: 8, 
+        cellPadding: 2.5, 
+        overflow: 'linebreak', 
+        halign: 'center', 
+        valign: 'middle',
+        textColor: [0, 0, 0],
+        lineColor: [100, 100, 100],
+        lineWidth: 0.2
+      },
       columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 22 }, 2: { cellWidth: 38 }, 6: { cellWidth: 18 } },
       margin: { top: 28, left: 12, right: 12 },
       didParseCell: data => {
         if (data.row.index === body.length - 1) {
-          data.cell.styles.fillColor = [249,249,249];
+          data.cell.styles.fillColor = [235, 235, 235];
           data.cell.styles.fontStyle = 'bold';
+        } else if (data.section === 'body') {
+          const record = schedule[data.row.index];
+          if (record && record.isDisposed) {
+            data.cell.styles.textColor = [128, 128, 128]; // Muted text color
+          }
+        }
+      },
+      didDrawCell: data => {
+        if (data.section === 'body' && data.row.index < schedule.length) {
+          const record = schedule[data.row.index];
+          if (record && record.isDisposed) {
+            const { x, y, width, height } = data.cell;
+            const textStr = data.cell.text.join(' ');
+            const textWidth = doc.getTextWidth(textStr);
+            const halign = data.cell.styles.halign;
+            
+            let startX = x + 2.5;
+            let endX = x + width - 2.5;
+            
+            if (halign === 'center') {
+              startX = x + (width - textWidth) / 2;
+              endX = x + (width + textWidth) / 2;
+            } else if (halign === 'right') {
+              startX = x + width - textWidth - 2.5;
+              endX = x + width - 2.5;
+            } else if (halign === 'left') {
+              startX = x + 2.5;
+              endX = x + 2.5 + textWidth;
+            }
+
+            const lineY = y + height / 2;
+            doc.setDrawColor(128, 128, 128); // Muted line color
+            doc.setLineWidth(0.15);
+            doc.line(startX, lineY, endX, lineY);
+          }
         }
       },
       showHead: 'everyPage',
@@ -343,8 +424,8 @@ export default function AssetDepreciationSchedulePage() {
         <AssetDepreciationSchedule
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
-          selectedMonth={selectedMonth}
-          setSelectedMonth={setSelectedMonth}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
         />
       </div>
     </MainLayout>

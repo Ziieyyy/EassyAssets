@@ -87,6 +87,11 @@ const translations: Record<Language, Record<string, string>> = {
     "assets.allCategories": "All Categories",
     "assets.allStatus": "All Status",
     "assets.print": "Print",
+    "assets.selectDate": "Select Date",
+    "common.clear": "Clear",
+    "print.allMonths": "All Months",
+    "print.filterApplied": "Filters applied",
+    "print.month": "Month",
     
     // Asset Status
     "status.active": "Active",
@@ -288,6 +293,9 @@ const translations: Record<Language, Record<string, string>> = {
     "assets.allCategories": "Semua Kategori",
     "assets.allStatus": "Semua Status",
     "assets.print": "Cetak",
+    "assets.selectDate": "Pilih Tarikh",
+    "common.clear": "Padam",
+    "print.allMonths": "Semua Bulan",
     
     // Print specific
     "print.filterApplied": "Penapis Digunakan",
@@ -426,7 +434,7 @@ const translations: Record<Language, Record<string, string>> = {
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem("theme") as Theme;
-    return savedTheme || "dark";
+    return savedTheme || "light";
   });
 
   const [language, setLanguageState] = useState<Language>(() => {

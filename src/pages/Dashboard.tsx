@@ -18,6 +18,9 @@ export default function Dashboard() {
   const { data: stats } = useAssetStats();
   const { data: assets } = useAssets();
 
+  console.log("DASHBOARD_ASSETS:", JSON.stringify(assets));
+  console.log("DASHBOARD_STATS:", JSON.stringify(stats));
+
   // Count assets with status = "maintenance"
   const maintenanceCount = useMemo(() => {
     if (!assets) return 0;

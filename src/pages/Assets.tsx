@@ -65,11 +65,21 @@ export default function Assets() {
   const [selectedStatus, setSelectedStatus] = useState("");
 
   const { data: allAssets, isLoading, isError, error } = useAssets();
+
+  const formatDate = (dateString: string | Date | null | undefined) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "-";
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
   
   const filteredAssets = useMemo(() => {
     if (!allAssets) return [];
     
-    return allAssets.filter((asset) => {
+    const filtered = allAssets.filter((asset) => {
       const matchesSearch =
         debouncedSearchQuery === '' ||
         asset.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
@@ -85,6 +95,25 @@ export default function Assets() {
         selectedStatus === "All Status" ||
         asset.status === selectedStatus;
       return matchesSearch && matchesCategory && matchesStatus;
+    });
+
+    const statusPriority: Record<string, number> = {
+      active: 1,
+      maintenance: 2,
+      inactive: 3,
+      disposed: 4,
+    };
+
+    return filtered.sort((a, b) => {
+      const priorityA = statusPriority[a.status] || 99;
+      const priorityB = statusPriority[b.status] || 99;
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      const dateA = a.status_date ? new Date(a.status_date).getTime() : 0;
+      const dateB = b.status_date ? new Date(b.status_date).getTime() : 0;
+      return dateB - dateA;
     });
   }, [allAssets, debouncedSearchQuery, selectedCategory, selectedStatus, t]);
   
@@ -164,23 +193,7 @@ export default function Assets() {
       return;
     }
     
-    const filteredAssetsForPrint = allAssets.filter((asset) => {
-      const matchesSearch =
-        debouncedSearchQuery === '' ||
-        asset.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-        asset.id.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-      const matchesCategory =
-        !selectedCategory ||
-        selectedCategory === t("assets.allCategories") ||
-        selectedCategory === "All Categories" ||
-        asset.category === selectedCategory;
-      const matchesStatus =
-        !selectedStatus ||
-        selectedStatus === t("assets.allStatus") ||
-        selectedStatus === "All Status" ||
-        asset.status === selectedStatus;
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
+    const filteredAssetsForPrint = filteredAssets;
     
     const tableRows = filteredAssetsForPrint.map((asset) => `
       <tr>
@@ -193,7 +206,7 @@ export default function Assets() {
         <td>${(asset.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         <td>${asset.assigned_to || 'Unassigned'}</td>
         <td>${(asset.status === 'active') ? '-' : (asset.status_notes || '-')}</td>
-        <td>${(asset.status === 'active') ? '-' : (asset.status_date ? new Date(asset.status_date).toLocaleDateString() : '-')}</td>
+        <td>${(asset.status === 'active') ? '-' : formatDate(asset.status_date)}</td>
       </tr>`).join('');
     
     const printContent = `
@@ -261,23 +274,7 @@ export default function Assets() {
       return;
     }
 
-    const filteredAssetsForExport = allAssets.filter((asset) => {
-      const matchesSearch =
-        debouncedSearchQuery === '' ||
-        asset.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-        asset.id.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-      const matchesCategory =
-        !selectedCategory ||
-        selectedCategory === t("assets.allCategories") ||
-        selectedCategory === "All Categories" ||
-        asset.category === selectedCategory;
-      const matchesStatus =
-        !selectedStatus ||
-        selectedStatus === t("assets.allStatus") ||
-        selectedStatus === "All Status" ||
-        asset.status === selectedStatus;
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
+    const filteredAssetsForExport = filteredAssets;
 
     if (filteredAssetsForExport.length === 0) {
       alert(t("assets.noMatchingAssets") || "No assets match the current filters");
@@ -326,7 +323,7 @@ export default function Assets() {
       (asset.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       asset.assigned_to || 'Unassigned',
       (asset.status === 'active' ? '-' : (asset.status_notes || '-')),
-      (asset.status === 'active' ? '-' : (asset.status_date ? new Date(asset.status_date).toLocaleDateString() : '-')),
+      (asset.status === 'active' ? '-' : formatDate(asset.status_date)),
     ]);
 
     (doc as any).autoTable({
@@ -513,7 +510,7 @@ export default function Assets() {
                       {(asset.status === 'active') ? '-' : (asset.status_notes || '-')}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {(asset.status === 'active') ? '-' : (asset.status_date ? new Date(asset.status_date).toLocaleDateString() : '-')}
+                      {(asset.status === 'active') ? '-' : formatDate(asset.status_date)}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

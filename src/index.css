@@ -320,3 +320,14 @@
     color: hsl(var(--foreground)) !important;
   }
 }
+
+/* Accounting totals border style (single top border, double bottom border) */
+.accounting-total-row td {
+  border-top: 1.5px solid #a3a3a3 !important;
+  border-bottom: 4.5px double #a3a3a3 !important;
+}
+
+.dark .accounting-total-row td {
+  border-top: 1.5px solid #525252 !important;
+  border-bottom: 4.5px double #525252 !important;
+}

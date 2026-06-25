@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,19 +7,22 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Landing from "./pages/Landing";
-import Index from "./pages/Index";
-import Assets from "./pages/Assets";
-import AddAsset from "./pages/AddAsset";
-import EditAsset from "./pages/EditAsset";
-import ViewAsset from "./pages/ViewAsset";
-import Settings from "./pages/Settings";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import NotFound from "./pages/NotFound";
-import AssetDepreciationSchedulePage from "./pages/AssetDepreciationSchedulePage";
+import { Loader2 } from "lucide-react";
+
+// Lazy-load pages to enable dynamic bundle splitting
+const Landing = lazy(() => import("./pages/Landing"));
+const Index = lazy(() => import("./pages/Index"));
+const Assets = lazy(() => import("./pages/Assets"));
+const AddAsset = lazy(() => import("./pages/AddAsset"));
+const EditAsset = lazy(() => import("./pages/EditAsset"));
+const ViewAsset = lazy(() => import("./pages/ViewAsset"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AssetDepreciationSchedulePage = lazy(() => import("./pages/AssetDepreciationSchedulePage"));
 
 const queryClient = new QueryClient();
 
@@ -30,7 +34,12 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <Routes>
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-screen bg-background">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            }>
+              <Routes>
               {/* Public routes */}
               <Route path="/welcome" element={<Landing />} />
               <Route path="/login" element={<Login />} />
@@ -99,7 +108,8 @@ const App = () => (
               {/* Catch-all route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
+          </Suspense>
+        </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
     </SettingsProvider>

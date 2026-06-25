@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { MapPin, TrendingDown, Bell } from 'lucide-react';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
+// AOS is dynamically imported inside useEffect for non-mobile devices to improve mobile bundle size and performance.
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -17,15 +16,23 @@ const Landing = () => {
   };
 
   useEffect(() => {
-    // Initialize AOS with professional SaaS-style settings
-    AOS.init({
-      duration: 800,
-      once: true,
-      easing: 'ease-out-cubic',
-      offset: 50,
-      disable: 'mobile', // Disable animations on mobile to maximize performance
-    });
-  }, []);
+    if (!isMobile) {
+      // Dynamic import to avoid loading AOS and its CSS on mobile viewports
+      Promise.all([
+        import('aos'),
+        import('aos/dist/aos.css')
+      ]).then(([AOSModule]) => {
+        AOSModule.default.init({
+          duration: 800,
+          once: true,
+          easing: 'ease-out-cubic',
+          offset: 50,
+        });
+      }).catch(err => {
+        console.error('Failed to load AOS:', err);
+      });
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     // Redirect authenticated users to dashboard

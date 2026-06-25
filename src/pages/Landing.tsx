@@ -10,6 +10,12 @@ const Landing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+  const aosAttr = (animation: string, delay?: number) => {
+    return isMobile ? {} : { 'data-aos': animation, 'data-aos-delay': delay };
+  };
+
   useEffect(() => {
     // Initialize AOS with professional SaaS-style settings
     AOS.init({
@@ -17,7 +23,7 @@ const Landing = () => {
       once: true,
       easing: 'ease-out-cubic',
       offset: 50,
-      disable: false,
+      disable: 'mobile', // Disable animations on mobile to maximize performance
     });
   }, []);
 
@@ -54,7 +60,7 @@ const Landing = () => {
       {/* Navbar */}
       <nav
         className="sticky top-0 z-50 backdrop-blur-md bg-[#E5D9F2] border-b border-stone-400/40"
-        data-aos="fade-down"
+        {...aosAttr("fade-down")}
       >
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -79,22 +85,22 @@ const Landing = () => {
       <section className="relative min-h-[calc(100vh-73px)] flex items-center justify-center px-6 overflow-hidden">
         {/* Radial Gradient Background */}
         <div className="absolute inset-0 bg-gradient-radial from-[#F5EFFF] via-[#E5D9F2]/80 to-[#d4c8e8]" />
-        {/* Purple Glow Effects */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#F5EFFF]/40 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#E5D9F2]/30 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
+        
+        {/* Purple Glow Effects - Disabled on mobile to prevent compositor lag and boost rendering speed */}
+        <div className="hidden md:block absolute top-1/4 left-1/4 w-96 h-96 bg-[#F5EFFF]/40 rounded-full blur-3xl animate-pulse" />
+        <div className="hidden md:block absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#E5D9F2]/30 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
         
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8">
           <h1
             className="text-5xl md:text-7xl font-bold leading-tight text-stone-800"
-            data-aos="fade-up"
+            {...aosAttr("fade-up")}
           >
             Smart Management for Growing Business
           </h1>
           
           <p
             className="text-xl md:text-2xl text-stone-700/90 max-w-2xl mx-auto"
-            data-aos="fade-up"
-            data-aos-delay="150"
+            {...aosAttr("fade-up", 150)}
           >
             The professional way to track, maintain, and depreciate your assets.
           </p>
@@ -114,8 +120,7 @@ const Landing = () => {
                 <div
                   key={feature.title}
                   className="bg-gradient-to-br from-[#F5EFFF]/50 to-[#E5D9F2]/40 border border-stone-400/40 rounded-xl p-8 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-stone-400/50 hover:border-stone-500/60 hover:-translate-y-2 group cursor-pointer"
-                  data-aos="fade-up"
-                  data-aos-delay={feature.delay}
+                  {...aosAttr("fade-up", feature.delay)}
                 >
                   <div className="w-14 h-14 bg-gradient-to-br from-[#F5EFFF] to-[#E5D9F2] rounded-lg flex items-center justify-center mb-6 transition-transform duration-300 group-hover:-translate-y-1">
                     <Icon className="w-7 h-7 text-stone-800" />
@@ -141,7 +146,7 @@ const Landing = () => {
         
         <div
           className="relative z-10 max-w-4xl mx-auto text-center space-y-8"
-          data-aos="zoom-in"
+          {...aosAttr("zoom-in")}
         >
           <h2 className="text-4xl md:text-5xl font-bold leading-tight text-stone-800">
             Stop losing track of your assets.
